@@ -1,0 +1,571 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Lamplight">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#2a2238">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>Lamplight Salon</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&family=Figtree:wght@400;500;600&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+[hidden]{display:none!important}
+/* Layout: one phone-height column. Header, a tall portrait stage, a controls strip, a four-step tab bar. Single lamplit evening look by choice. */
+:root {
+  --night: #2a2238;
+  --night-2: #382d4a;
+  --lamp: #ffd9a0;
+  --peach: #f5a38c;
+  --mist: #d9d0ec;
+  --sage: #9bb89a;
+  --line: rgba(217, 208, 236, 0.16);
+  --display: "Fredoka", "Trebuchet MS", system-ui, sans-serif;
+  --body: "Figtree", system-ui, -apple-system, sans-serif;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body {
+  background: var(--night);
+  color: var(--mist);
+  font-family: var(--body);
+  font-size: 15px;
+  padding-block: 8px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  overflow: hidden;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+button { font: inherit; color: inherit; cursor: pointer; border: 0; background: none; }
+button:focus-visible { outline: 2px solid var(--lamp); outline-offset: 2px; }
+#app { height: 100%; display: flex; flex-direction: column; gap: 8px; max-width: 520px; margin: 0 auto; position: relative; }
+header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+h1 { font-family: var(--display); font-weight: 500; font-size: 1.2rem; margin: 0; color: var(--lamp); letter-spacing: 0.01em; }
+#snd { font-size: 0.8rem; padding: 6px 12px; border-radius: 99px; background: var(--night-2); border: 1px solid var(--line); }
+#snd[aria-pressed="false"] { opacity: 0.6; }
+#stagewrap { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
+#stage {
+  height: 100%; aspect-ratio: 300 / 360; max-width: 100%; position: relative; overflow: hidden;
+  border-radius: 28px; border: 1px solid var(--line);
+  background: radial-gradient(circle at 50% 28%, #70505a 0%, #3b2d45 60%, #2a2238 100%);
+  touch-action: none;
+}
+#stage[data-scene="rain"] { background: repeating-linear-gradient(105deg, rgba(255,255,255,0.05) 0 2px, transparent 2px 22px), linear-gradient(#3a5170, #232d44); }
+#stage[data-scene="dusk"] { background: linear-gradient(#eaa592, #8a6a9c 58%, #3b3157); }
+#stage[data-scene="moss"] { background: radial-gradient(circle at 50% 30%, #6c8c70, #2f4338 75%); }
+#stage svg, #stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+#fx { touch-action: none; cursor: grab; }
+#char { --skin: #ecc19c; --hair: #5b3a2e; --outfit: #7fa6c9; --glow: 0; --shine: 0; }
+#char .glow { opacity: var(--glow); transition: opacity 1.2s; }
+#char .shine { opacity: var(--shine); transition: opacity 0.8s; }
+.acc { display: none; }
+#char[data-extra="bow"] #acc-bow, #char[data-extra="flowers"] #acc-flowers,
+#char[data-extra="glasses"] #acc-glasses, #char[data-extra="band"] #acc-band { display: inline; }
+#controls { display: flex; flex-direction: column; gap: 8px; }
+#bar { height: 4px; border-radius: 4px; background: var(--night-2); overflow: hidden; }
+#barfill { display: block; height: 100%; width: 0; background: var(--peach); border-radius: 4px; transition: width 0.25s; }
+#hint { margin: 0; min-height: 2.6em; line-height: 1.3; text-wrap: balance; text-align: center; }
+.primary {
+  font-family: var(--display); font-weight: 500; font-size: 1.05rem;
+  padding: 12px 20px; border-radius: 16px; background: var(--peach); color: #3a2230; min-height: 48px;
+}
+.primary:disabled { background: var(--night-2); color: rgba(217, 208, 236, 0.45); cursor: default; }
+.ghost { padding: 12px 20px; border-radius: 16px; background: var(--night-2); border: 1px solid var(--line); min-height: 48px; }
+#stylepanel { display: flex; flex-direction: column; gap: 8px; }
+#cats, #opts { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+#cats::-webkit-scrollbar, #opts::-webkit-scrollbar { display: none; }
+#cats button { white-space: nowrap; padding: 6px 12px; border-radius: 99px; font-size: 0.85rem; color: rgba(217, 208, 236, 0.7); }
+#cats button[aria-selected="true"] { background: var(--night-2); color: var(--lamp); border: 1px solid var(--line); }
+#opts { min-height: 46px; align-items: center; }
+.sw { flex: none; width: 40px; height: 40px; border-radius: 50%; border: 2px solid transparent; box-shadow: inset 0 0 0 2px var(--night); }
+.sw[aria-pressed="true"] { border-color: var(--lamp); }
+.chip { flex: none; padding: 9px 14px; border-radius: 99px; background: var(--night-2); border: 2px solid transparent; font-size: 0.9rem; }
+.chip[aria-pressed="true"] { border-color: var(--lamp); color: var(--lamp); }
+#tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 6px; border-radius: 20px; background: var(--night-2); border: 1px solid var(--line); }
+#tabs button { padding: 8px 4px; border-radius: 14px; font-family: var(--display); font-size: 0.95rem; display: flex; flex-direction: column; align-items: center; gap: 4px; color: rgba(217, 208, 236, 0.7); }
+#tabs button[aria-selected="true"] { background: var(--night); color: var(--lamp); }
+#tabs i { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid currentColor; }
+#tabs button.done i { background: var(--sage); border-color: var(--sage); }
+#tabs button.nudge { animation: nudge 1.4s ease-in-out infinite; }
+@keyframes nudge { 50% { transform: translateY(-3px); } }
+#revealbar { display: flex; flex-direction: column; gap: 10px; text-align: center; }
+#revealbar p { margin: 0; font-family: var(--display); font-size: 1.35rem; color: var(--lamp); }
+#revealbar .row { display: flex; gap: 8px; }
+#revealbar .row button { flex: 1; }
+#app.revealed #controls, #app.revealed #tabs { display: none; }
+#begin {
+  position: fixed; inset: 0; z-index: 10; background: var(--night); display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 18px; text-align: center;
+  padding: 24px max(24px, env(safe-area-inset-left, 0px));
+}
+#begin h2 { font-family: var(--display); font-weight: 500; font-size: 2.4rem; margin: 0; color: var(--lamp); }
+#begin p { margin: 0; max-width: 28ch; line-height: 1.4; }
+#begin .lampglow { width: 120px; height: 120px; border-radius: 50%; background: radial-gradient(circle, rgba(255,217,160,0.85), rgba(255,217,160,0) 70%); }
+@media (prefers-reduced-motion: reduce) { #tabs button.nudge { animation: none; } }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <header>
+    <h1>Lamplight Salon</h1>
+    <button id="snd" aria-pressed="true">Sound on</button>
+  </header>
+  <div id="stagewrap">
+    <div id="stage" data-scene="lamp">
+      <svg id="char" viewBox="0 0 300 360" data-extra="none" aria-label="A relaxed person with closed eyes">
+        <defs>
+          <radialGradient id="glowG" cx="50%" cy="42%" r="60%">
+            <stop offset="0" stop-color="#fff2d2" stop-opacity="0.95"/>
+            <stop offset="1" stop-color="#fff2d2" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <path d="M150 72 C74 72 54 140 58 208 C60 252 50 288 70 314 L230 314 C250 288 240 252 242 208 C246 140 226 72 150 72 Z" fill="var(--hair)"/>
+        <path d="M128 240 L128 292 C140 304 160 304 172 292 L172 240 Z" fill="var(--skin)"/>
+        <path d="M128 262 C140 276 160 276 172 262 L172 240 L128 240 Z" fill="#000" opacity="0.1"/>
+        <path d="M54 360 C58 306 100 284 150 284 C200 284 242 306 246 360 Z" fill="var(--outfit)"/>
+        <path d="M120 289 C135 312 165 312 180 289" fill="none" stroke="#000" stroke-opacity="0.12" stroke-width="4" stroke-linecap="round"/>
+        <ellipse cx="89" cy="178" rx="9" ry="14" fill="var(--skin)"/>
+        <ellipse cx="211" cy="178" rx="9" ry="14" fill="var(--skin)"/>
+        <ellipse cx="150" cy="170" rx="62" ry="72" fill="var(--skin)"/>
+        <ellipse class="glow" cx="150" cy="170" rx="62" ry="72" fill="url(#glowG)"/>
+        <ellipse cx="112" cy="190" rx="13" ry="8" fill="#f2918f" opacity="0.4"/>
+        <ellipse cx="188" cy="190" rx="13" ry="8" fill="#f2918f" opacity="0.4"/>
+        <path d="M114 153 Q127 147 138 153 M162 153 Q173 147 186 153" fill="none" stroke="var(--hair)" stroke-width="3" stroke-linecap="round" opacity="0.75"/>
+        <path d="M118 169 Q127 177 136 169 M164 169 Q173 177 182 169" fill="none" stroke="#3a2a3a" stroke-width="3" stroke-linecap="round"/>
+        <path d="M141 208 Q150 215 159 208" fill="none" stroke="#a5566a" stroke-width="3" stroke-linecap="round"/>
+        <path d="M84 152 C88 100 120 86 150 86 C182 86 212 100 216 152 C198 128 176 116 150 116 C124 116 102 128 84 152 Z" fill="var(--hair)"/>
+        <path class="shine" d="M100 122 C118 100 150 94 180 102" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"/>
+        <g id="acc-band" class="acc"><path d="M80 146 C90 82 210 82 220 146" fill="none" stroke="#7ec4b6" stroke-width="9" stroke-linecap="round"/></g>
+        <g id="acc-bow" class="acc"><path d="M196 100 L168 86 L168 114 Z M196 100 L224 86 L224 114 Z" fill="#f5a38c"/><circle cx="196" cy="100" r="7" fill="#e5806a"/></g>
+        <g id="acc-flowers" class="acc">
+          <g fill="#f7c5d4"><circle cx="94" cy="130" r="10"/><circle cx="116" cy="104" r="10"/><circle cx="150" cy="94" r="10"/><circle cx="184" cy="104" r="10"/><circle cx="206" cy="130" r="10"/></g>
+          <g fill="#ffd36e"><circle cx="94" cy="130" r="3.5"/><circle cx="116" cy="104" r="3.5"/><circle cx="150" cy="94" r="3.5"/><circle cx="184" cy="104" r="3.5"/><circle cx="206" cy="130" r="3.5"/></g>
+        </g>
+        <g id="acc-glasses" class="acc" fill="rgba(255,255,255,0.1)" stroke="#3a2a3a" stroke-width="3"><circle cx="127" cy="172" r="21"/><circle cx="173" cy="172" r="21"/><path d="M148 170 L152 170" fill="none"/></g>
+      </svg>
+      <canvas id="fx" aria-label="Tap and drag here to play"></canvas>
+    </div>
+  </div>
+  <div id="controls">
+    <div id="bar"><i id="barfill"></i></div>
+    <p id="hint"></p>
+    <div id="stylepanel" hidden>
+      <div id="cats" role="tablist"></div>
+      <div id="opts"></div>
+    </div>
+    <button id="act" class="primary">Rinse</button>
+  </div>
+  <nav id="tabs" aria-label="Steps">
+    <button data-i="0" aria-selected="true"><span>Wash</span><i></i></button>
+    <button data-i="1" aria-selected="false"><span>Brush</span><i></i></button>
+    <button data-i="2" aria-selected="false"><span>Mask</span><i></i></button>
+    <button data-i="3" aria-selected="false"><span>Style</span><i></i></button>
+  </nav>
+  <div id="revealbar" hidden>
+    <p>All done. You look rested.</p>
+    <div class="row"><button id="keep" class="ghost">Keep styling</button><button id="again" class="primary">Start over</button></div>
+  </div>
+</div>
+<div id="begin">
+  <div class="lampglow"></div>
+  <h2>Lamplight Salon</h2>
+  <p>A slow makeover with soft sounds. Headphones make it better.</p>
+  <button id="go" class="primary">Begin</button>
+</div>
+<script>
+(function () {
+'use strict';
+var W = 300, H = 360;
+var $ = function (s) { return document.querySelector(s); };
+var app = $('#app'), stage = $('#stage'), cv = $('#fx'), ctx = cv.getContext('2d'), charEl = $('#char');
+var reduce = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+/* ---------- canvas sizing ---------- */
+function resize() {
+  var r = stage.getBoundingClientRect(), d = Math.min(2, window.devicePixelRatio || 1);
+  cv.width = Math.max(1, Math.round(r.width * d));
+  cv.height = Math.max(1, Math.round(r.height * d));
+}
+if (window.ResizeObserver) new ResizeObserver(resize).observe(stage);
+resize();
+window.addEventListener('resize', resize);
+
+/* ---------- audio ---------- */
+var ac = null, master = null, nb = null, V = {}, muted = false;
+function voice(freq, q, type) {
+  var s = ac.createBufferSource(); s.buffer = nb; s.loop = true;
+  var f = ac.createBiquadFilter(); f.type = type || 'bandpass'; f.frequency.value = freq; f.Q.value = q;
+  var g = ac.createGain(); g.gain.value = 0;
+  s.connect(f); f.connect(g); g.connect(master); s.start();
+  return { g: g, f: f };
+}
+function setV(v, level, freq) {
+  if (!ac || !v) return;
+  var t = ac.currentTime;
+  v.g.gain.setTargetAtTime(level, t, 0.05);
+  if (freq) v.f.frequency.setTargetAtTime(freq, t, 0.06);
+}
+function silence() { setV(V.scrub, 0); setV(V.brush, 0); setV(V.squish, 0); }
+function initAudio() {
+  if (ac) { if (ac.state === 'suspended') ac.resume(); return; }
+  var AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return;
+  ac = new AC();
+  master = ac.createGain(); master.gain.value = muted ? 0 : 0.9; master.connect(ac.destination);
+  nb = ac.createBuffer(1, ac.sampleRate * 2, ac.sampleRate);
+  var d = nb.getChannelData(0);
+  for (var i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  V.scrub = voice(3200, 0.7); V.brush = voice(6500, 0.9); V.squish = voice(650, 1.1);
+  V.water = voice(4200, 0.4);
+  V.rain = voice(2400, 0.2); setV(V.rain, 0.05);
+  (function crack() {
+    if (ac && ac.state === 'running') click(2400 + Math.random() * 2500, 0.04 + Math.random() * 0.05, 0.02 + Math.random() * 0.03, 1.2);
+    setTimeout(crack, 150 + Math.random() * 1100);
+  })();
+  if (ac.state === 'suspended') ac.resume();
+}
+function click(freq, gain, dur, q) {
+  if (!ac) return;
+  var t = ac.currentTime, s = ac.createBufferSource(); s.buffer = nb;
+  var f = ac.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = freq || 2200; f.Q.value = q || 1.5;
+  var g = ac.createGain(); g.gain.setValueAtTime(gain || 0.12, t);
+  g.gain.exponentialRampToValueAtTime(0.001, t + (dur || 0.05));
+  s.connect(f); f.connect(g); g.connect(master);
+  s.start(t, Math.random() * 1.5, (dur || 0.05) + 0.03);
+}
+var PENT = [0, 2, 4, 7, 9, 12, 14, 16];
+function chime(n, gain) {
+  if (!ac) return;
+  var t = ac.currentTime, f = 523.25 * Math.pow(2, PENT[((n % PENT.length) + PENT.length) % PENT.length] / 12);
+  [1, 2].forEach(function (m, i) {
+    var o = ac.createOscillator(); o.type = 'sine'; o.frequency.value = f * m;
+    var g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime((gain || 0.09) / (i + 1.6), t + 0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 1.7);
+    o.connect(g); g.connect(master); o.start(t); o.stop(t + 1.8);
+  });
+}
+$('#snd').addEventListener('click', function () {
+  muted = !muted;
+  this.setAttribute('aria-pressed', String(!muted));
+  this.textContent = muted ? 'Sound off' : 'Sound on';
+  if (master) master.gain.setTargetAtTime(muted ? 0 : 0.9, ac.currentTime, 0.05);
+});
+document.addEventListener('visibilitychange', function () {
+  if (!ac) return;
+  if (document.visibilityState === 'visible') ac.resume(); else silence();
+});
+
+/* ---------- geometry ---------- */
+function HEAD(x, y, m) { m = m || 1; var a = (x - 150) / (100 * m), b = (y - 185) / (130 * m); return a * a + b * b <= 1; }
+function FACE(x, y) { var a = (x - 150) / 62, b = (y - 170) / 72; return a * a + b * b <= 1 && y >= 122; }
+function cellsTotal(fn, size) {
+  var n = 0;
+  for (var y = size / 2; y < H; y += size) for (var x = size / 2; x < W; x += size) if (fn(x, y)) n++;
+  return n;
+}
+var WC = 24, CC = 10;
+var washTotal = cellsTotal(HEAD, WC), clayTotal = cellsTotal(FACE, CC);
+function mark(set, x, y, size, fn) {
+  var cx = Math.floor(x / size) * size + size / 2, cy = Math.floor(y / size) * size + size / 2;
+  if (fn(cx, cy)) set[Math.floor(x / size) + ',' + Math.floor(y / size)] = 1;
+}
+function count(o) { var n = 0; for (var k in o) n++; return n; }
+
+/* ---------- state ---------- */
+var TANGLES = [[74, 175], [68, 235], [86, 282], [226, 175], [232, 235], [214, 282], [112, 106], [190, 106]];
+var S;
+function fresh() {
+  S = { st: 0, done: [false, false, false, false], foam: [], washCells: {}, rinseT0: 0, washed: false,
+    tangles: TANGLES.map(function (p) { return { x: p[0], y: p[1], gone: 0 }; }), removed: 0, trail: [],
+    clay: [], clayCells: {}, peelT0: 0, peeled: false, sparks: [], reveal: false, key: '' };
+}
+fresh();
+
+function sparkle(x, y, n, spread) {
+  if (reduce) n = Math.ceil(n / 3);
+  for (var i = 0; i < n; i++) {
+    var a = Math.random() * 6.28, sp = 0.3 + Math.random() * (spread || 1.2);
+    S.sparks.push({ x: x, y: y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 0.4, t0: performance.now(), life: 700 + Math.random() * 700, r: 2.5 + Math.random() * 3.5, c: Math.random() < 0.5 ? '#ffe6b0' : '#ffc2b0' });
+  }
+  if (S.sparks.length > 160) S.sparks.splice(0, S.sparks.length - 160);
+}
+
+/* ---------- interaction ---------- */
+function along(a, b, step, fn) {
+  var d = Math.hypot(b.x - a.x, b.y - a.y), n = Math.max(1, Math.ceil(d / step));
+  for (var i = 1; i <= n; i++) fn(a.x + (b.x - a.x) * i / n, a.y + (b.y - a.y) * i / n);
+}
+function act(p, prev, v, down) {
+  var st = S.st, now = performance.now(), moving = !down;
+  if (st === 0) {
+    if (S.washed || S.rinseT0) return;
+    var from = prev || p;
+    along(from, p, 7, function (x, y) {
+      for (var k = 0; k < 2; k++) {
+        var a = Math.random() * 6.28, rr = Math.random() * 14, bx = x + Math.cos(a) * rr, by = y + Math.sin(a) * rr;
+        if (!HEAD(bx, by, 1.12)) continue;
+        S.foam.push({ x: bx, y: by, r: 6 + Math.random() * 10, a: 0.75 + Math.random() * 0.25 });
+        mark(S.washCells, bx, by, WC, HEAD);
+      }
+    });
+    if (S.foam.length > 650) S.foam.splice(0, S.foam.length - 650);
+    if (moving && HEAD(p.x, p.y, 1.15)) setV(V.scrub, Math.min(1, v / 0.5) * 0.3, 2800 + Math.random() * 1400); else setV(V.scrub, 0);
+  } else if (st === 1) {
+    if (prev) {
+      S.trail.push({ x1: prev.x, y1: prev.y, x2: p.x, y2: p.y, t0: now });
+      if (S.trail.length > 90) S.trail.shift();
+    }
+    if (moving) setV(V.brush, Math.min(1, v / 0.6) * 0.26, 5200 + (p.y / H) * 2600); else setV(V.brush, 0);
+    S.tangles.forEach(function (t) {
+      if (!t.gone && moving && Math.hypot(p.x - t.x, p.y - t.y) < 28) {
+        t.gone = now; S.removed++;
+        sparkle(t.x, t.y, 8, 1); chime(S.removed + 1, 0.08); click(3500, 0.1, 0.04, 2);
+      }
+    });
+  } else if (st === 2) {
+    if (S.peeled || S.peelT0) return;
+    var f2 = prev || p, any = false;
+    along(f2, p, 5, function (x, y) {
+      if (!FACE(x, y)) return;
+      any = true;
+      S.clay.push({ x: x + (Math.random() - 0.5) * 6, y: y + (Math.random() - 0.5) * 6, r: 9 + Math.random() * 6, thr: Math.random(), l: Math.random() * 14 - 7 });
+      mark(S.clayCells, x, y, CC, FACE);
+    });
+    if (S.clay.length > 1500) S.clay.splice(0, S.clay.length - 1500);
+    if (moving && any) setV(V.squish, Math.min(1, v / 0.4) * 0.3, 450 + Math.random() * 350); else setV(V.squish, 0);
+  } else if (down) {
+    sparkle(p.x, p.y, 10, 1.3); chime(Math.floor(Math.random() * 6), 0.07);
+  }
+}
+function pos(e) {
+  var r = cv.getBoundingClientRect();
+  return { x: (e.clientX - r.left) / r.width * W, y: (e.clientY - r.top) / r.height * H, t: e.timeStamp };
+}
+var last = null;
+cv.addEventListener('pointerdown', function (e) {
+  if (!ac) return;
+  try { cv.setPointerCapture(e.pointerId); } catch (x) {}
+  last = pos(e); act(last, null, 0, true);
+});
+cv.addEventListener('pointermove', function (e) {
+  if (!last) return;
+  var p = pos(e), d = Math.hypot(p.x - last.x, p.y - last.y), dt = Math.max(6, p.t - last.t);
+  act(p, last, d / dt, false); last = p;
+});
+function up() { last = null; silence(); }
+cv.addEventListener('pointerup', up);
+cv.addEventListener('pointercancel', up);
+
+/* ---------- drawing ---------- */
+function star(x, y, r) {
+  ctx.beginPath();
+  for (var i = 0; i < 8; i++) { var a = i * Math.PI / 4, rr = i % 2 ? r * 0.3 : r; ctx.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); }
+  ctx.closePath(); ctx.fill();
+}
+function drawTangles(now) {
+  ctx.lineCap = 'round';
+  S.tangles.forEach(function (t) {
+    var a = 1;
+    if (t.gone) { a = 1 - (now - t.gone) / 400; if (a <= 0) return; }
+    [['rgba(30,20,40,0.35)', 4.2], ['rgba(255,232,210,0.85)', 2]].forEach(function (s) {
+      ctx.globalAlpha = a; ctx.strokeStyle = s[0]; ctx.lineWidth = s[1]; ctx.beginPath();
+      for (var i = 0; i <= 40; i++) {
+        var th = i * 0.5, r = 1 + i * 0.22, x = t.x + Math.cos(th) * r, y = t.y + Math.sin(th) * r * 0.8;
+        if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y);
+      }
+      ctx.stroke();
+    });
+  });
+  ctx.globalAlpha = 1;
+}
+function drawFoam(now) {
+  var q = 0;
+  if (S.rinseT0) {
+    q = (now - S.rinseT0) / 1800;
+    if (q >= 1) {
+      S.foam = []; S.washed = true; S.rinseT0 = 0; S.done[0] = true; setV(V.water, 0); chime(4, 0.09);
+      sparkle(150, 170, 14, 1.5); return;
+    }
+  }
+  var dy = q * 34;
+  ctx.fillStyle = 'rgba(255,255,255,1)'; ctx.strokeStyle = 'rgba(190,215,245,0.9)'; ctx.lineWidth = 1;
+  for (var i = 0; i < S.foam.length; i++) {
+    var b = S.foam[i];
+    ctx.globalAlpha = b.a * (1 - q) * 0.92;
+    ctx.beginPath(); ctx.arc(b.x, b.y + dy, b.r, 0, 6.283); ctx.fill(); ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+}
+function drawClay(now) {
+  if (!S.clay.length) return;
+  var q = S.peelT0 ? (now - S.peelT0) / 1500 : 0;
+  if (q >= 1) {
+    S.clay = []; S.clayCells = {}; S.peelT0 = 0; S.peeled = true; S.done[2] = true;
+    chime(5, 0.09); sparkle(150, 170, 16, 1.6); return;
+  }
+  if (S.peelT0 && Math.random() < 0.4) click(2600 + Math.random() * 1500, 0.09, 0.03, 1.4);
+  ctx.save();
+  ctx.beginPath(); ctx.ellipse(150, 170, 62, 72, 0, 0, 6.283); ctx.clip();
+  ctx.beginPath(); ctx.rect(0, 122, W, H); ctx.clip();
+  for (var i = 0; i < S.clay.length; i++) {
+    var c = S.clay[i], a = 1 - Math.max(0, Math.min(1, (q - c.thr * 0.7) / 0.3));
+    if (a <= 0) continue;
+    ctx.globalAlpha = a * 0.93;
+    ctx.fillStyle = 'rgb(' + (150 + c.l) + ',' + (184 + c.l) + ',' + (152 + c.l) + ')';
+    ctx.beginPath(); ctx.arc(c.x, c.y, c.r, 0, 6.283); ctx.fill();
+  }
+  ctx.restore(); ctx.globalAlpha = 1;
+}
+function drawTrail(now) {
+  ctx.lineCap = 'round'; ctx.lineWidth = 3.5;
+  S.trail = S.trail.filter(function (s) { return now - s.t0 < 700; });
+  S.trail.forEach(function (s) {
+    ctx.strokeStyle = 'rgba(255,240,215,' + (0.6 * (1 - (now - s.t0) / 700)) + ')';
+    ctx.beginPath(); ctx.moveTo(s.x1, s.y1); ctx.lineTo(s.x2, s.y2); ctx.stroke();
+  });
+}
+function drawSparks(now) {
+  S.sparks = S.sparks.filter(function (s) { return now - s.t0 < s.life; });
+  S.sparks.forEach(function (s) {
+    var a = (now - s.t0) / s.life, k = (now - s.t0) / 16;
+    ctx.globalAlpha = 1 - a; ctx.fillStyle = s.c;
+    star(s.x + s.vx * k, s.y + s.vy * k + a * a * 14, s.r * (1 - a * 0.4));
+  });
+  ctx.globalAlpha = 1;
+}
+
+/* ---------- ui ---------- */
+var STEPS = ['Wash', 'Brush', 'Mask', 'Style'];
+var tabs = Array.prototype.slice.call(document.querySelectorAll('#tabs button'));
+var hint = $('#hint'), barfill = $('#barfill'), actBtn = $('#act'), panel = $('#stylepanel');
+function progress() {
+  if (S.st === 0) return S.washed ? 1 : Math.min(1, count(S.washCells) / (washTotal * 0.6));
+  if (S.st === 1) return S.removed / S.tangles.length;
+  if (S.st === 2) return S.peeled ? 1 : Math.min(1, count(S.clayCells) / (clayTotal * 0.8));
+  return 1;
+}
+function refresh() {
+  var p = progress(), st = S.st, left = S.tangles.length - S.removed;
+  if (left === 0) S.done[1] = true;
+  var key = [st, Math.round(p * 100), S.washed, !!S.rinseT0, S.peeled, !!S.peelT0, left, S.done.join()].join('|');
+  if (key === S.key) return;
+  S.key = key;
+  barfill.style.width = Math.round(p * 100) + '%';
+  var h, label = '', show = true, on = true;
+  if (st === 0) {
+    label = 'Rinse'; show = !S.washed; on = p >= 1 && !S.rinseT0;
+    h = S.washed ? 'Squeaky clean. On to brushing.' : S.rinseT0 ? 'Rinsing...' : p >= 1 ? 'Lots of foam. Tap Rinse.' : 'Drag over the hair and face to build up soft foam.';
+  } else if (st === 1) {
+    show = false;
+    h = left === 0 ? 'Smooth and shiny. Time for a mask.' : 'Brush the tangles out of the hair. ' + left + ' left.';
+  } else if (st === 2) {
+    label = 'Peel off'; show = !S.peeled; on = p >= 1 && !S.peelT0;
+    h = S.peeled ? 'Fresh skin. Now pick a look.' : S.peelT0 ? 'Peeling...' : p >= 1 ? 'The mask is set. Tap Peel off.' : 'Paint a clay mask across the face.';
+  } else {
+    label = 'Reveal'; h = 'Pick skin, hair, outfit and extras. Tap the portrait for sparkles.';
+  }
+  hint.textContent = h; actBtn.textContent = label; actBtn.hidden = !show; actBtn.disabled = !on;
+  tabs.forEach(function (b, i) {
+    b.setAttribute('aria-selected', String(i === st));
+    b.classList.toggle('done', !!S.done[i]);
+    b.classList.toggle('nudge', !!S.done[st] && i === st + 1 && st < 3);
+  });
+  panel.hidden = st !== 3;
+  charEl.style.setProperty('--glow', (S.washed ? 0.35 : 0) + (S.peeled ? 0.4 : 0));
+  charEl.style.setProperty('--shine', (0.8 * S.removed / S.tangles.length).toFixed(2));
+}
+function setStation(i) { S.st = i; S.key = ''; silence(); click(1800, 0.08, 0.04, 1.2); refresh(); }
+tabs.forEach(function (b) { b.addEventListener('click', function () { setStation(+b.getAttribute('data-i')); }); });
+actBtn.addEventListener('click', function () {
+  if (S.st === 0 && !S.rinseT0 && !S.washed) { S.rinseT0 = performance.now(); setV(V.water, 0.22, 4200); }
+  else if (S.st === 2 && !S.peelT0 && !S.peeled) { S.peelT0 = performance.now(); }
+  else if (S.st === 3) {
+    S.reveal = true; S.done[3] = true; app.classList.add('revealed'); $('#revealbar').hidden = false;
+    [0, 2, 4, 5, 7].forEach(function (n, i) { setTimeout(function () { chime(n, 0.08); }, i * 160); });
+    sparkle(150, 170, 30, 2);
+  }
+  S.key = ''; refresh();
+});
+$('#keep').addEventListener('click', function () { S.reveal = false; app.classList.remove('revealed'); $('#revealbar').hidden = true; });
+$('#again').addEventListener('click', function () {
+  var sc = S.sparks; fresh(); S.sparks = sc; app.classList.remove('revealed'); $('#revealbar').hidden = true;
+  click(1800, 0.1, 0.05, 1.2); refresh();
+});
+
+/* ---------- style panel ---------- */
+var CATS = [['skin', 'Skin'], ['hair', 'Hair'], ['outfit', 'Outfit'], ['extra', 'Extras'], ['scene', 'Scene']];
+var OPTS = {
+  skin: [['#f6d3b8', 'Fair'], ['#ecc19c', 'Light'], ['#cf9770', 'Medium'], ['#a56d4b', 'Tan'], ['#6f4833', 'Deep']],
+  hair: [['#5b3a2e', 'Chestnut'], ['#2b2540', 'Ink'], ['#c98f4a', 'Honey'], ['#b5586f', 'Rose'], ['#8a73c2', 'Lilac']],
+  outfit: [['#7fa6c9', 'Cornflower'], ['#e7b8a4', 'Blush'], ['#8fb08c', 'Sage'], ['#f1c75f', 'Butter'], ['#c9c1e8', 'Lavender']],
+  extra: [['none', 'Bare'], ['bow', 'Bow'], ['flowers', 'Flowers'], ['glasses', 'Glasses'], ['band', 'Headband']],
+  scene: [['lamp', 'Lamp room'], ['rain', 'Rainy window'], ['dusk', 'Dusk'], ['moss', 'Moss']]
+};
+var sel = { skin: 1, hair: 0, outfit: 0, extra: 0, scene: 0 }, cat = 'skin';
+function applyLook() {
+  charEl.style.setProperty('--skin', OPTS.skin[sel.skin][0]);
+  charEl.style.setProperty('--hair', OPTS.hair[sel.hair][0]);
+  charEl.style.setProperty('--outfit', OPTS.outfit[sel.outfit][0]);
+  charEl.setAttribute('data-extra', OPTS.extra[sel.extra][0]);
+  stage.setAttribute('data-scene', OPTS.scene[sel.scene][0]);
+}
+function renderCats() {
+  var box = $('#cats'); box.innerHTML = '';
+  CATS.forEach(function (c) {
+    var b = document.createElement('button'); b.textContent = c[1]; b.setAttribute('role', 'tab');
+    b.setAttribute('aria-selected', String(c[0] === cat));
+    b.addEventListener('click', function () { cat = c[0]; click(1800, 0.06, 0.03, 1.2); renderCats(); renderOpts(); });
+    box.appendChild(b);
+  });
+}
+function renderOpts() {
+  var box = $('#opts'), colorful = cat === 'skin' || cat === 'hair' || cat === 'outfit'; box.innerHTML = '';
+  OPTS[cat].forEach(function (o, i) {
+    var b = document.createElement('button');
+    b.className = colorful ? 'sw' : 'chip';
+    if (colorful) { b.style.background = o[0]; b.setAttribute('aria-label', o[1]); } else b.textContent = o[1];
+    b.setAttribute('aria-pressed', String(sel[cat] === i));
+    b.addEventListener('click', function () {
+      sel[cat] = i; applyLook(); S.done[3] = true; S.key = '';
+      click(2200, 0.1, 0.05, 1.5); chime(i + 1, 0.07); sparkle(150, 170, 8, 1.2);
+      renderOpts(); refresh();
+    });
+    box.appendChild(b);
+  });
+}
+applyLook(); renderCats(); renderOpts();
+
+/* ---------- loop ---------- */
+function frame() {
+  var now = performance.now(), k = cv.width / W;
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height);
+  ctx.setTransform(k, 0, 0, k, 0, 0);
+  if (S.st < 3) drawTangles(now);
+  drawFoam(now); drawClay(now); drawTrail(now);
+  if (S.reveal && Math.random() < (reduce ? 0.05 : 0.18)) sparkle(60 + Math.random() * 180, 70 + Math.random() * 220, 1, 0.5);
+  drawSparks(now);
+  refresh();
+  requestAnimationFrame(frame);
+}
+refresh();
+requestAnimationFrame(frame);
+
+$('#go').addEventListener('click', function () {
+  initAudio(); click(1800, 0.1, 0.05, 1.2); chime(2, 0.07);
+  $('#begin').hidden = true;
+});
+})();
+</script>
+
+</body>
+</html>
