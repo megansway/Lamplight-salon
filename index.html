@@ -66,6 +66,12 @@ h1 { font-family: var(--display); font-weight: 500; font-size: 1.2rem; margin: 0
 #char .glow { opacity: var(--glow); transition: opacity 1.2s; }
 #char .shine { opacity: var(--shine); transition: opacity 0.8s; }
 .acc { display: none; }
+.hf, .hf * { fill: var(--hair); }
+.hb, .top { display: none; }
+#char[data-cut="long"] #hb-long, #char[data-cut="bob"] #hb-bob, #char[data-cut="buns"] #hb-buns { display: inline; }
+#char[data-top="hoodie"] #top-hoodie, #char[data-top="turtle"] #top-turtle { display: inline; }
+#char[data-extra="beanie"] #acc-beanie, #char[data-extra="ears"] #acc-ears,
+#char[data-extra="earrings"] #acc-earrings, #char[data-extra="stars"] #acc-stars { display: inline; }
 #char[data-extra="bow"] #acc-bow, #char[data-extra="flowers"] #acc-flowers,
 #char[data-extra="glasses"] #acc-glasses, #char[data-extra="band"] #acc-band { display: inline; }
 #controls { display: flex; flex-direction: column; gap: 8px; }
@@ -88,8 +94,8 @@ h1 { font-family: var(--display); font-weight: 500; font-size: 1.2rem; margin: 0
 .sw[aria-pressed="true"] { border-color: var(--lamp); }
 .chip { flex: none; padding: 9px 14px; border-radius: 99px; background: var(--night-2); border: 2px solid transparent; font-size: 0.9rem; }
 .chip[aria-pressed="true"] { border-color: var(--lamp); color: var(--lamp); }
-#tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 6px; border-radius: 20px; background: var(--night-2); border: 1px solid var(--line); }
-#tabs button { padding: 8px 4px; border-radius: 14px; font-family: var(--display); font-size: 0.95rem; display: flex; flex-direction: column; align-items: center; gap: 4px; color: rgba(217, 208, 236, 0.7); }
+#tabs { display: grid; grid-template-columns: repeat(var(--n, 7), 1fr); gap: 2px; padding: 4px; border-radius: 20px; background: var(--night-2); border: 1px solid var(--line); }
+#tabs button { padding: 8px 0; border-radius: 14px; font-family: var(--display); font-size: 0.72rem; display: flex; flex-direction: column; align-items: center; gap: 4px; color: rgba(217, 208, 236, 0.7); }
 #tabs button[aria-selected="true"] { background: var(--night); color: var(--lamp); }
 #tabs i { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid currentColor; }
 #tabs button.done i { background: var(--sage); border-color: var(--sage); }
@@ -108,30 +114,56 @@ h1 { font-family: var(--display); font-weight: 500; font-size: 1.2rem; margin: 0
 #begin h2 { font-family: var(--display); font-weight: 500; font-size: 2.4rem; margin: 0; color: var(--lamp); }
 #begin p { margin: 0; max-width: 28ch; line-height: 1.4; }
 #begin .lampglow { width: 120px; height: 120px; border-radius: 50%; background: radial-gradient(circle, rgba(255,217,160,0.85), rgba(255,217,160,0) 70%); }
-@media (prefers-reduced-motion: reduce) { #tabs button.nudge { animation: none; } }
+#stage #hands, #stage #hoof { display: none; }
+#stage[data-view="hoof"] #hoof { display: block; }
+#stage[data-view="hoof"] #char, #stage[data-view="hoof"] #hands { display: none; }
+#stage[data-scene="stable"] { background: linear-gradient(#dcb67f, #8d6341 70%, #5c3f2a); }
+#shoe { opacity: 0; transform: translateY(-34px); transition: opacity 0.5s, transform 0.5s; }
+#shoe.on { opacity: 1; transform: none; }
+.hdr-r { display: flex; gap: 8px; align-items: center; }
+.seg { display: flex; background: var(--night-2); border: 1px solid var(--line); border-radius: 99px; padding: 2px; }
+.seg button { padding: 5px 11px; border-radius: 99px; font-size: 0.8rem; color: rgba(217,208,236,0.7); }
+.seg button[aria-pressed="true"] { background: var(--night); color: var(--lamp); }
+.hf, .hf * { transition: fill 0.7s; }
+#stage[data-view="hands"] #hands { display: block; }
+#stage[data-view="hands"] #hands { display: block; }
+#stage[data-view="hands"] #char { display: none; }
+#hands ellipse[id^="nail"] { fill: rgba(255,255,255,0.3); transition: fill 0.3s; }
+#hands ellipse[id^="gloss"] { display: none; }
+#polish { display: flex; gap: 8px; overflow-x: auto; min-height: 46px; align-items: center; scrollbar-width: none; }
+#polish::-webkit-scrollbar { display: none; }
+#char.drying .hf { transform-origin: 150px 90px; animation: sway 0.32s ease-in-out infinite alternate; }
+@keyframes sway { from { transform: rotate(-1.6deg); } to { transform: rotate(1.6deg); } }
+@media (prefers-reduced-motion: reduce) { #tabs button.nudge, #char.drying .hf { animation: none; } }
 </style>
 </head>
 <body>
 
 <div id="app">
   <header>
-    <h1>Lamplight Salon</h1>
-    <button id="snd" aria-pressed="true">Sound on</button>
+    <h1>Lamplight</h1>
+    <div class="hdr-r">
+      <div class="seg" role="group" aria-label="Place">
+        <button id="m-salon" aria-pressed="true">Salon</button>
+        <button id="m-stable" aria-pressed="false">Stable</button>
+      </div>
+      <button id="snd" aria-pressed="true">Sound on</button>
+    </div>
   </header>
   <div id="stagewrap">
     <div id="stage" data-scene="lamp">
-      <svg id="char" viewBox="0 0 300 360" data-extra="none" aria-label="A relaxed person with closed eyes">
+      <svg id="char" viewBox="0 0 300 360" data-extra="none" data-cut="long" data-top="tee" aria-label="A relaxed person with closed eyes">
         <defs>
           <radialGradient id="glowG" cx="50%" cy="42%" r="60%">
             <stop offset="0" stop-color="#fff2d2" stop-opacity="0.95"/>
             <stop offset="1" stop-color="#fff2d2" stop-opacity="0"/>
           </radialGradient>
         </defs>
-        <path d="M150 72 C74 72 54 140 58 208 C60 252 50 288 70 314 L230 314 C250 288 240 252 242 208 C246 140 226 72 150 72 Z" fill="var(--hair)"/>
+        <g class="hf"><g id="hb-long" class="hb"><path d="M150 72 C74 72 54 140 58 208 C60 252 50 288 70 314 L230 314 C250 288 240 252 242 208 C246 140 226 72 150 72 Z"/></g><g id="hb-bob" class="hb"><path d="M150 74 C80 74 58 130 60 190 C61 232 66 250 84 254 L216 254 C234 250 239 232 240 190 C242 130 220 74 150 74 Z"/></g><g id="hb-buns" class="hb"><path d="M150 74 C80 74 58 130 60 190 C61 220 66 232 84 236 L216 236 C234 232 239 220 240 190 C242 130 220 74 150 74 Z"/><circle cx="98" cy="72" r="22"/><circle cx="202" cy="72" r="22"/></g></g>
         <path d="M128 240 L128 292 C140 304 160 304 172 292 L172 240 Z" fill="var(--skin)"/>
         <path d="M128 262 C140 276 160 276 172 262 L172 240 L128 240 Z" fill="#000" opacity="0.1"/>
         <path d="M54 360 C58 306 100 284 150 284 C200 284 242 306 246 360 Z" fill="var(--outfit)"/>
-        <path d="M120 289 C135 312 165 312 180 289" fill="none" stroke="#000" stroke-opacity="0.12" stroke-width="4" stroke-linecap="round"/>
+        <path d="M120 289 C135 312 165 312 180 289" fill="none" stroke="#000" stroke-opacity="0.12" stroke-width="4" stroke-linecap="round"/><g id="top-hoodie" class="top"><path d="M94 292 C108 266 192 266 206 292 C192 314 108 314 94 292 Z" fill="var(--outfit)" stroke="#000" stroke-opacity="0.15" stroke-width="3"/><path d="M138 300 L134 342 M162 300 L166 342" stroke="#f4ead8" stroke-width="3.5" stroke-linecap="round" fill="none"/></g><g id="top-turtle" class="top"><path d="M124 246 L176 246 L182 294 L118 294 Z" fill="var(--outfit)"/><path d="M123 258 L177 258 M121 270 L179 270 M119 282 L181 282" stroke="#000" stroke-opacity="0.14" stroke-width="3" stroke-linecap="round" fill="none"/></g>
         <ellipse cx="89" cy="178" rx="9" ry="14" fill="var(--skin)"/>
         <ellipse cx="211" cy="178" rx="9" ry="14" fill="var(--skin)"/>
         <ellipse cx="150" cy="170" rx="62" ry="72" fill="var(--skin)"/>
@@ -150,6 +182,46 @@ h1 { font-family: var(--display); font-weight: 500; font-size: 1.2rem; margin: 0
           <g fill="#ffd36e"><circle cx="94" cy="130" r="3.5"/><circle cx="116" cy="104" r="3.5"/><circle cx="150" cy="94" r="3.5"/><circle cx="184" cy="104" r="3.5"/><circle cx="206" cy="130" r="3.5"/></g>
         </g>
         <g id="acc-glasses" class="acc" fill="rgba(255,255,255,0.1)" stroke="#3a2a3a" stroke-width="3"><circle cx="127" cy="172" r="21"/><circle cx="173" cy="172" r="21"/><path d="M148 170 L152 170" fill="none"/></g>
+        <g id="acc-beanie" class="acc"><path d="M86 122 C86 58 214 58 214 122 Z" fill="#c9605a"/><path d="M78 112 L222 112 Q226 112 226 118 L226 128 Q226 134 220 134 L80 134 Q74 134 74 128 L74 118 Q74 112 78 112 Z" fill="#a84a48"/><circle cx="150" cy="58" r="12" fill="#f4ead8"/></g><g id="acc-ears" class="acc"><path d="M90 108 L94 56 L132 86 Z M210 108 L206 56 L168 86 Z" class="hf"/><path d="M101 96 L102 72 L121 87 Z M199 96 L198 72 L179 87 Z" fill="#f2a29b"/></g><g id="acc-earrings" class="acc"><g fill="#ffd36e"><circle cx="89" cy="196" r="5"/><circle cx="211" cy="196" r="5"/></g><path d="M89 190 L89 191 M211 190 L211 191" stroke="#ffd36e" stroke-width="2"/></g><g id="acc-stars" class="acc" fill="#ffd36e"><polygon transform="translate(110 112) scale(1.5)" points="0,-6 1.8,-1.9 6,-1.9 2.6,0.8 3.8,5 0,2.5 -3.8,5 -2.6,0.8 -6,-1.9 -1.8,-1.9"/><polygon transform="translate(192 108) scale(1.2)" points="0,-6 1.8,-1.9 6,-1.9 2.6,0.8 3.8,5 0,2.5 -3.8,5 -2.6,0.8 -6,-1.9 -1.8,-1.9"/></g>
+      </svg>
+      <svg id="hands" viewBox="0 0 300 360" aria-label="A hand ready for nail polish">
+        <g style="fill:var(--skin)" stroke="#000" stroke-opacity="0.1" stroke-width="1.5">
+          <rect x="116" y="296" width="68" height="64"/>
+          <rect x="104" y="214" width="96" height="106" rx="30"/>
+          <rect x="100" y="112" width="24" height="120" rx="12"/>
+          <rect x="128" y="92" width="24" height="140" rx="12"/>
+          <rect x="156" y="104" width="24" height="128" rx="12"/>
+          <rect x="184" y="137" width="22" height="95" rx="11"/>
+          <rect x="-12" y="-37" width="24" height="76" rx="12" transform="translate(88 236) rotate(-40)"/>
+        </g>
+        <path d="M54 360 C60 328 100 316 150 316 C200 316 240 328 246 360 Z" style="fill:var(--outfit)"/>
+        <g stroke="#000" stroke-opacity="0.12" stroke-width="1.5">
+          <ellipse id="nail0" cx="72" cy="217" rx="9" ry="12" transform="rotate(-40 72 217)"/>
+          <ellipse id="nail1" cx="112" cy="126" rx="9" ry="12"/>
+          <ellipse id="nail2" cx="140" cy="106" rx="9" ry="12"/>
+          <ellipse id="nail3" cx="168" cy="118" rx="9" ry="12"/>
+          <ellipse id="nail4" cx="195" cy="148" rx="8.5" ry="11"/>
+        </g>
+        <g fill="#fff" opacity="0.7">
+          <ellipse id="gloss0" cx="69" cy="212" rx="2" ry="5" transform="rotate(-40 69 212)"/>
+          <ellipse id="gloss1" cx="108" cy="121" rx="2" ry="5"/>
+          <ellipse id="gloss2" cx="136" cy="101" rx="2" ry="5"/>
+          <ellipse id="gloss3" cx="164" cy="113" rx="2" ry="5"/>
+          <ellipse id="gloss4" cx="192" cy="143" rx="2" ry="4.5"/>
+        </g>
+      </svg>
+      <svg id="hoof" viewBox="0 0 300 360" aria-label="A horse hoof seen from underneath">
+        <defs><radialGradient id="soleG" cx="50%" cy="45%" r="60%"><stop offset="0" stop-color="#d3bfa3"/><stop offset="1" stop-color="#a68c70"/></radialGradient></defs>
+        <path d="M150 52 C66 60 40 190 70 276 C84 314 116 332 150 332 C184 332 216 314 230 276 C260 190 234 60 150 52 Z" fill="#4d3b30"/>
+        <path d="M150 74 C84 82 64 192 90 266 C100 296 124 312 150 312 C176 312 200 296 210 266 C236 192 216 82 150 74 Z" fill="url(#soleG)"/>
+        <path d="M150 128 C122 168 112 232 126 296 L174 296 C188 232 178 168 150 128 Z" fill="#8f7461"/>
+        <path d="M150 140 L150 292" stroke="#5e4a3b" stroke-width="3" stroke-linecap="round" fill="none"/>
+        <path d="M126 296 C124 270 100 250 92 232 M174 296 C176 270 200 250 208 232" stroke="#7a6350" stroke-width="5" stroke-linecap="round" fill="none"/>
+        <g id="shoe">
+          <path d="M98 296 C70 250 66 150 100 98 C120 70 180 70 200 98 C234 150 230 250 202 296" fill="none" stroke="#7d8693" stroke-width="18" stroke-linecap="round"/>
+          <path d="M98 296 C70 250 66 150 100 98 C120 70 180 70 200 98 C234 150 230 250 202 296" fill="none" stroke="#c9d0da" stroke-width="5" stroke-linecap="round"/>
+          <g fill="#3b3f48"><circle cx="82" cy="253" r="3.5"/><circle cx="76" cy="199" r="3.5"/><circle cx="81" cy="144" r="3.5"/><circle cx="218" cy="253" r="3.5"/><circle cx="224" cy="199" r="3.5"/><circle cx="219" cy="144" r="3.5"/></g>
+        </g>
       </svg>
       <canvas id="fx" aria-label="Tap and drag here to play"></canvas>
     </div>
@@ -161,14 +233,10 @@ h1 { font-family: var(--display); font-weight: 500; font-size: 1.2rem; margin: 0
       <div id="cats" role="tablist"></div>
       <div id="opts"></div>
     </div>
+    <div id="polishpanel" hidden><div id="polish"></div></div>
     <button id="act" class="primary">Rinse</button>
   </div>
-  <nav id="tabs" aria-label="Steps">
-    <button data-i="0" aria-selected="true"><span>Wash</span><i></i></button>
-    <button data-i="1" aria-selected="false"><span>Brush</span><i></i></button>
-    <button data-i="2" aria-selected="false"><span>Mask</span><i></i></button>
-    <button data-i="3" aria-selected="false"><span>Style</span><i></i></button>
-  </nav>
+  <nav id="tabs" aria-label="Steps"></nav>
   <div id="revealbar" hidden>
     <p>All done. You look rested.</p>
     <div class="row"><button id="keep" class="ghost">Keep styling</button><button id="again" class="primary">Start over</button></div>
@@ -213,7 +281,12 @@ function setV(v, level, freq) {
   v.g.gain.setTargetAtTime(level, t, 0.05);
   if (freq) v.f.frequency.setTargetAtTime(freq, t, 0.06);
 }
-function silence() { setV(V.scrub, 0); setV(V.brush, 0); setV(V.squish, 0); }
+function silence() { setV(V.scrub, 0); setV(V.brush, 0); setV(V.squish, 0); setV(V.dry, 0); setV(V.hum, 0); }
+function humVoice() {
+  var o = ac.createOscillator(); o.type = 'triangle'; o.frequency.value = 105;
+  var g = ac.createGain(); g.gain.value = 0; o.connect(g); g.connect(master); o.start();
+  return { g: g, f: { frequency: o.frequency } };
+}
 function initAudio() {
   if (ac) { if (ac.state === 'suspended') ac.resume(); return; }
   var AC = window.AudioContext || window.webkitAudioContext;
@@ -225,10 +298,15 @@ function initAudio() {
   for (var i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
   V.scrub = voice(3200, 0.7); V.brush = voice(6500, 0.9); V.squish = voice(650, 1.1);
   V.water = voice(4200, 0.4);
+  V.dry = voice(750, 0.5, 'lowpass'); V.hum = humVoice(); V.breath = voice(900, 0.4, 'lowpass');
   V.rain = voice(2400, 0.2); setV(V.rain, 0.05);
   (function crack() {
     if (ac && ac.state === 'running') click(2400 + Math.random() * 2500, 0.04 + Math.random() * 0.05, 0.02 + Math.random() * 0.03, 1.2);
     setTimeout(crack, 150 + Math.random() * 1100);
+  })();
+  (function drift() {
+    if (ac && ac.state === 'running' && !muted) chime(Math.floor(Math.random() * 8), 0.025);
+    setTimeout(drift, 3500 + Math.random() * 4500);
   })();
   if (ac.state === 'suspended') ac.resume();
 }
@@ -282,20 +360,79 @@ function mark(set, x, y, size, fn) {
 function count(o) { var n = 0; for (var k in o) n++; return n; }
 
 /* ---------- state ---------- */
-var TANGLES = [[74, 175], [68, 235], [86, 282], [226, 175], [232, 235], [214, 282], [112, 106], [190, 106]];
-var S;
+var TANGLES = [[74, 170], [70, 220], [78, 140], [226, 170], [230, 220], [222, 140], [112, 106], [190, 106]];
+var STEPS = { salon: ['Wash', 'Brush', 'Dye', 'Mask', 'Eyes', 'Dry', 'Nails', 'Style'], stable: ['Pick', 'Hose', 'Rasp', 'Oil', 'Shoe'] };
+var M = 'salon';
+var EYES = [[127, 172], [173, 172]];
+var NAILS = [[72, 217], [112, 126], [140, 106], [168, 118], [195, 148]];
+var POLISH = [['#f5a38c', 'Peach'], ['#e86a8a', 'Pink'], ['#c9605a', 'Brick'], ['#8a73c2', 'Lilac'], ['#7ec4b6', 'Mint'], ['#7fa6c9', 'Sky'], ['#f1c75f', 'Butter'], ['#2b2540', 'Ink']];
+var DYES = [['#b3263a', 'Crimson'], ['#e0703a', 'Copper'], ['#e86a8a', 'Pink'], ['#8a73c2', 'Lilac'], ['#3aa0a0', 'Teal'], ['#3f6fd0', 'Blue'], ['#9ac96b', 'Lime'], ['#e8e0d0', 'Platinum']];
+var polish = 0, dyePick = 0, dyeColor = null;
+var NAIL_HOLES = [[82, 253], [76, 199], [81, 144], [218, 253], [224, 199], [219, 144]];
+function HAIRZ(x, y) {
+  if (!HEAD(x, y, 1)) return false;
+  if (y > 255) return false;
+  if (x > 112 && x < 188 && y > 200) return false;
+  var a = (x - 150) / 64, b = (y - 170) / 74;
+  return a * a + b * b > 1 || y < 118;
+}
+function HOOF(x, y) { var a = (x - 150) / 100, b = (y - 192) / 140; return a * a + b * b <= 1; }
+var DC = 14, HC = 16;
+var dyeTotal = cellsTotal(HAIRZ, DC), hoofTotal = cellsTotal(HOOF, HC);
+var S, HF, ptr = null;
+function makeDrops() {
+  var d = [], tries = 0;
+  while (d.length < 44 && tries < 3000) {
+    tries++;
+    var x = 56 + Math.random() * 188, y = 82 + Math.random() * 154;
+    var a = (x - 150) / 100, b = (y - 185) / 130, fa = (x - 150) / 66, fb = (y - 170) / 76;
+    if (a * a + b * b <= 0.95 && fa * fa + fb * fb > 1) d.push({ x: x, y: y, hp: 1, r: 2.6 + Math.random() * 1.6 });
+  }
+  return d;
+}
+function makeMud() {
+  var m = [], tries = 0, cols = ['#5a4030', '#6b4d38', '#4b3526', '#7a5a42'];
+  while (m.length < 90 && tries < 4000) {
+    tries++;
+    var x = 82 + Math.random() * 136, y = 86 + Math.random() * 224, a = (x - 150) / 68, b = (y - 198) / 112;
+    if (a * a + b * b > 1) continue;
+    var stone = Math.random() < 0.12;
+    m.push({ x: x, y: y, r: stone ? 4 + Math.random() * 3 : 7 + Math.random() * 6, c: stone ? '#8d9096' : cols[Math.floor(Math.random() * 4)], hp: 1, stone: stone });
+  }
+  return m;
+}
+function makeFlakes() {
+  var f = [];
+  for (var i = 0; i < 28; i++) {
+    var th = i / 28 * 6.283 + Math.random() * 0.1, k = 1 + (Math.random() - 0.5) * 0.06;
+    f.push({ x: 150 + Math.cos(th) * 91 * k, y: 192 + Math.sin(th) * 128 * k, a: th, gone: 0 });
+  }
+  return f;
+}
+function freshH() {
+  HF = { st: 0, done: { Pick: false, Hose: false, Rasp: false, Oil: false, Shoe: false }, key: '', mud: makeMud(), picked: 0,
+    cleaned: {}, hosed: false, flakes: makeFlakes(), rasped: 0, oil: [], oilCells: {}, buffed: false, buffT0: 0,
+    shoeOn: false, shoeT0: 0, nails: [false, false, false, false, false, false] };
+}
 function fresh() {
-  S = { st: 0, done: [false, false, false, false], foam: [], washCells: {}, rinseT0: 0, washed: false,
+  S = { st: 0, done: { Wash: false, Brush: false, Dye: false, Mask: false, Eyes: false, Dry: false, Nails: false, Style: false },
+    foam: [], washCells: {}, rinseT0: 0, washed: false,
     tangles: TANGLES.map(function (p) { return { x: p[0], y: p[1], gone: 0 }; }), removed: 0, trail: [],
-    clay: [], clayCells: {}, peelT0: 0, peeled: false, sparks: [], reveal: false, key: '' };
+    clay: [], clayCells: {}, peelT0: 0, peeled: false, scraping: false, scrapeTotal: 0, scrapeGone: 0, mmode: 'paint',
+    dye: { strokes: [], cells: {}, set: false, setT0: 0 },
+    sparks: [], reveal: false, key: '',
+    slices: [false, false], drops: makeDrops(), dryer: null, dryOn: false, nails: [-1, -1, -1, -1, -1], topcoat: false };
+  freshH();
 }
 fresh();
+function X() { return M === 'salon' ? S : HF; }
+function cur() { return STEPS[M][X().st]; }
 
-function sparkle(x, y, n, spread) {
+function sparkle(x, y, n, spread, color) {
   if (reduce) n = Math.ceil(n / 3);
   for (var i = 0; i < n; i++) {
     var a = Math.random() * 6.28, sp = 0.3 + Math.random() * (spread || 1.2);
-    S.sparks.push({ x: x, y: y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 0.4, t0: performance.now(), life: 700 + Math.random() * 700, r: 2.5 + Math.random() * 3.5, c: Math.random() < 0.5 ? '#ffe6b0' : '#ffc2b0' });
+    S.sparks.push({ x: x, y: y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 0.4, t0: performance.now(), life: 700 + Math.random() * 700, r: 2.5 + Math.random() * 3.5, c: color || (Math.random() < 0.5 ? '#ffe6b0' : '#ffc2b0') });
   }
   if (S.sparks.length > 160) S.sparks.splice(0, S.sparks.length - 160);
 }
@@ -305,9 +442,65 @@ function along(a, b, step, fn) {
   var d = Math.hypot(b.x - a.x, b.y - a.y), n = Math.max(1, Math.ceil(d / step));
   for (var i = 1; i <= n; i++) fn(a.x + (b.x - a.x) * i / n, a.y + (b.y - a.y) * i / n);
 }
+function paintNear(p, down) {
+  var best = -1, bd = 24;
+  NAILS.forEach(function (n, i) { var d = Math.hypot(p.x - n[0], p.y - n[1]); if (d < bd) { bd = d; best = i; } });
+  if (best < 0 || S.topcoat) return;
+  if (S.nails[best] !== polish) {
+    S.nails[best] = polish; S.key = '';
+    click(900, 0.12, 0.07, 0.9); click(3800, 0.07, 0.02, 2); chime(best + 2, 0.05);
+    sparkle(NAILS[best][0], NAILS[best][1], 5, 0.8);
+  } else if (down) click(4200, 0.06, 0.02, 2);
+}
+function actStable(name, p, prev, v, down) {
+  var moving = !down, from = prev || p, lv = Math.min(1, v / 0.5);
+  if (name === 'Pick') {
+    HF.mud.forEach(function (m) {
+      if (m.hp > 0 && Math.hypot(p.x - m.x, p.y - m.y) < 17) {
+        m.hp = 0; HF.picked++; click(700 + Math.random() * 500, 0.12, 0.05, 1);
+        sparkle(m.x, m.y, 3, 0.8, m.c);
+      }
+    });
+    setV(V.scrub, moving ? lv * 0.2 : 0, 1300 + Math.random() * 400);
+  } else if (name === 'Hose') {
+    if (HF.hosed) return;
+    along(from, p, 6, function (x, y) {
+      for (var dx = -16; dx <= 16; dx += 8) for (var dy = -16; dy <= 16; dy += 8) {
+        if (dx * dx + dy * dy <= 300) mark(HF.cleaned, x + dx, y + dy, HC, HOOF);
+      }
+    });
+    if (moving) { sparkle(p.x, p.y, 2, 0.8, '#a9d6f7'); setV(V.water, 0.2 + lv * 0.08, 4200); } else setV(V.water, 0);
+  } else if (name === 'Rasp') {
+    HF.flakes.forEach(function (f) {
+      if (!f.gone && moving && Math.hypot(p.x - f.x, p.y - f.y) < 19) {
+        f.gone = performance.now(); HF.rasped++; click(2600 + Math.random() * 800, 0.1, 0.04, 2);
+        sparkle(f.x, f.y, 3, 0.7, '#d9c4a0');
+      }
+    });
+    setV(V.brush, moving ? lv * 0.24 : 0, 2400 + Math.random() * 600);
+  } else if (name === 'Oil') {
+    if (HF.buffed) return;
+    along(from, p, 5, function (x, y) {
+      if (!HOOF(x, y)) return;
+      HF.oil.push({ x: x, y: y, r: 9 + Math.random() * 4 }); mark(HF.oilCells, x, y, HC, HOOF);
+    });
+    if (HF.oil.length > 900) HF.oil.splice(0, HF.oil.length - 900);
+    setV(V.squish, moving ? lv * 0.2 : 0, 750);
+  } else if (name === 'Shoe' && down && HF.shoeOn) {
+    var bi = -1, bd = 26;
+    NAIL_HOLES.forEach(function (n, i) { var d = Math.hypot(p.x - n[0], p.y - n[1]); if (!HF.nails[i] && d < bd) { bd = d; bi = i; } });
+    if (bi >= 0) {
+      HF.nails[bi] = true; HF.key = '';
+      click(5200, 0.2, 0.03, 3); setTimeout(function () { click(3600, 0.14, 0.05, 2.5); }, 70); chime(bi + 1, 0.06);
+      sparkle(NAIL_HOLES[bi][0], NAIL_HOLES[bi][1], 6, 1, '#e8edf2');
+    }
+  }
+}
 function act(p, prev, v, down) {
-  var st = S.st, now = performance.now(), moving = !down;
-  if (st === 0) {
+  var name = cur(), now = performance.now(), moving = !down;
+  ptr = { x: p.x, y: p.y };
+  if (M === 'stable') { actStable(name, p, prev, v, down); return; }
+  if (name === 'Wash') {
     if (S.washed || S.rinseT0) return;
     var from = prev || p;
     along(from, p, 7, function (x, y) {
@@ -320,7 +513,7 @@ function act(p, prev, v, down) {
     });
     if (S.foam.length > 650) S.foam.splice(0, S.foam.length - 650);
     if (moving && HEAD(p.x, p.y, 1.15)) setV(V.scrub, Math.min(1, v / 0.5) * 0.3, 2800 + Math.random() * 1400); else setV(V.scrub, 0);
-  } else if (st === 1) {
+  } else if (name === 'Brush') {
     if (prev) {
       S.trail.push({ x1: prev.x, y1: prev.y, x2: p.x, y2: p.y, t0: now });
       if (S.trail.length > 90) S.trail.shift();
@@ -332,17 +525,52 @@ function act(p, prev, v, down) {
         sparkle(t.x, t.y, 8, 1); chime(S.removed + 1, 0.08); click(3500, 0.1, 0.04, 2);
       }
     });
-  } else if (st === 2) {
-    if (S.peeled || S.peelT0) return;
-    var f2 = prev || p, any = false;
-    along(f2, p, 5, function (x, y) {
-      if (!FACE(x, y)) return;
-      any = true;
-      S.clay.push({ x: x + (Math.random() - 0.5) * 6, y: y + (Math.random() - 0.5) * 6, r: 9 + Math.random() * 6, thr: Math.random(), l: Math.random() * 14 - 7 });
-      mark(S.clayCells, x, y, CC, FACE);
+  } else if (name === 'Dye') {
+    if (S.dye.set) return;
+    var f1 = prev || p;
+    along(f1, p, 5, function (x, y) {
+      if (!HAIRZ(x, y)) return;
+      S.dye.strokes.push({ x: x, y: y, r: 8 + Math.random() * 3, c: DYES[dyePick][0] }); mark(S.dye.cells, x, y, DC, HAIRZ);
     });
-    if (S.clay.length > 1500) S.clay.splice(0, S.clay.length - 1500);
-    if (moving && any) setV(V.squish, Math.min(1, v / 0.4) * 0.3, 450 + Math.random() * 350); else setV(V.squish, 0);
+    if (S.dye.strokes.length > 1400) S.dye.strokes.splice(0, S.dye.strokes.length - 1400);
+    if (moving) setV(V.squish, Math.min(1, v / 0.5) * 0.22, 900); else setV(V.squish, 0);
+  } else if (name === 'Mask') {
+    if (S.peeled || S.peelT0) return;
+    if (down) {
+      S.mmode = count(S.clayCells) >= clayTotal * 0.8 ? 'scrape' : 'paint';
+      if (S.mmode === 'scrape' && !S.scraping) { S.scraping = true; S.scrapeTotal = S.clay.length; S.scrapeGone = 0; S.key = ''; }
+    }
+    var f2 = prev || p, any = false;
+    if (S.mmode === 'paint') {
+      along(f2, p, 5, function (x, y) {
+        if (!FACE(x, y)) return;
+        any = true;
+        S.clay.push({ x: x + (Math.random() - 0.5) * 6, y: y + (Math.random() - 0.5) * 6, r: 9 + Math.random() * 6, thr: Math.random(), l: Math.random() * 14 - 7, gone: 0 });
+        mark(S.clayCells, x, y, CC, FACE);
+      });
+      if (S.clay.length > 1500) S.clay.splice(0, S.clay.length - 1500);
+      if (moving && any) setV(V.squish, Math.min(1, v / 0.4) * 0.3, 450 + Math.random() * 350); else setV(V.squish, 0);
+    } else {
+      var hit = false;
+      S.clay.forEach(function (c) {
+        if (!c.gone && Math.hypot(p.x - c.x, p.y - c.y) < 16) { c.gone = now; S.scrapeGone++; hit = true; }
+      });
+      if (hit && Math.random() < 0.35) sparkle(p.x, p.y, 1, 0.5);
+      if (moving) setV(V.scrub, Math.min(1, v / 0.5) * (hit ? 0.26 : 0.1), 1700 + Math.random() * 500); else setV(V.scrub, 0);
+    }
+  } else if (name === 'Eyes') {
+    if (!down) return;
+    var bi = -1, bd = 34;
+    EYES.forEach(function (e, i) { var d = Math.hypot(p.x - e[0], p.y - e[1]); if (d < bd) { bd = d; bi = i; } });
+    if (bi < 0) return;
+    S.slices[bi] = !S.slices[bi]; S.key = '';
+    if (S.slices[bi]) { click(520, 0.2, 0.09, 0.8); chime(bi + 3, 0.06); sparkle(EYES[bi][0], EYES[bi][1], 4, 0.7); }
+    else click(760, 0.1, 0.05, 1);
+    if (S.slices[0] && S.slices[1] && !S.done.Eyes) { S.done.Eyes = true; chime(6, 0.08); }
+  } else if (name === 'Dry') {
+    S.dryer = { x: p.x, y: p.y };
+  } else if (name === 'Nails') {
+    paintNear(p, down);
   } else if (down) {
     sparkle(p.x, p.y, 10, 1.3); chime(Math.floor(Math.random() * 6), 0.07);
   }
@@ -362,7 +590,7 @@ cv.addEventListener('pointermove', function (e) {
   var p = pos(e), d = Math.hypot(p.x - last.x, p.y - last.y), dt = Math.max(6, p.t - last.t);
   act(p, last, d / dt, false); last = p;
 });
-function up() { last = null; silence(); }
+function up() { last = null; ptr = null; S.dryer = null; silence(); if (M === 'stable') setV(V.water, 0); }
 cv.addEventListener('pointerup', up);
 cv.addEventListener('pointercancel', up);
 
@@ -393,7 +621,7 @@ function drawFoam(now) {
   if (S.rinseT0) {
     q = (now - S.rinseT0) / 1800;
     if (q >= 1) {
-      S.foam = []; S.washed = true; S.rinseT0 = 0; S.done[0] = true; setV(V.water, 0); chime(4, 0.09);
+      S.foam = []; S.washed = true; S.rinseT0 = 0; S.done.Wash = true; setV(V.water, 0); chime(4, 0.09);
       sparkle(150, 170, 14, 1.5); return;
     }
   }
@@ -410,7 +638,7 @@ function drawClay(now) {
   if (!S.clay.length) return;
   var q = S.peelT0 ? (now - S.peelT0) / 1500 : 0;
   if (q >= 1) {
-    S.clay = []; S.clayCells = {}; S.peelT0 = 0; S.peeled = true; S.done[2] = true;
+    S.clay = []; S.clayCells = {}; S.peelT0 = 0; S.peeled = true; S.done.Mask = true;
     chime(5, 0.09); sparkle(150, 170, 16, 1.6); return;
   }
   if (S.peelT0 && Math.random() < 0.4) click(2600 + Math.random() * 1500, 0.09, 0.03, 1.4);
@@ -419,7 +647,7 @@ function drawClay(now) {
   ctx.beginPath(); ctx.rect(0, 122, W, H); ctx.clip();
   for (var i = 0; i < S.clay.length; i++) {
     var c = S.clay[i], a = 1 - Math.max(0, Math.min(1, (q - c.thr * 0.7) / 0.3));
-    if (a <= 0) continue;
+    if (a <= 0 || c.gone) continue;
     ctx.globalAlpha = a * 0.93;
     ctx.fillStyle = 'rgb(' + (150 + c.l) + ',' + (184 + c.l) + ',' + (152 + c.l) + ')';
     ctx.beginPath(); ctx.arc(c.x, c.y, c.r, 0, 6.283); ctx.fill();
@@ -444,80 +672,372 @@ function drawSparks(now) {
   ctx.globalAlpha = 1;
 }
 
+
+/* ---------- extra stations: drawing and stepping ---------- */
+function drawDrops(now) {
+  for (var i = 0; i < S.drops.length; i++) {
+    var d = S.drops[i];
+    if (d.hp <= 0) continue;
+    ctx.globalAlpha = 0.35 + d.hp * 0.55;
+    ctx.fillStyle = 'rgb(190,225,255)';
+    ctx.beginPath(); ctx.arc(d.x, d.y, d.r * (0.6 + d.hp * 0.4), 0, 6.283); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.beginPath(); ctx.arc(d.x - d.r * 0.3, d.y - d.r * 0.3, d.r * 0.3, 0, 6.283); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+function drawDryer(now) {
+  if (cur() !== 'Dry' || !S.dryer) return;
+  var x = S.dryer.x, y = S.dryer.y, g = ctx.createRadialGradient(x, y, 2, x, y, 38);
+  g.addColorStop(0, 'rgba(255,255,255,0.4)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, 38, 0, 6.283); ctx.fill();
+  ctx.lineWidth = 2; ctx.lineCap = 'round';
+  for (var i = 0; i < 3; i++) {
+    var ph = ((now / 700) + i / 3) % 1;
+    ctx.strokeStyle = 'rgba(255,255,255,' + ((1 - ph) * 0.5) + ')';
+    ctx.beginPath(); ctx.arc(x, y, 8 + ph * 30, 0, 6.283); ctx.stroke();
+  }
+}
+function drawSlices(now) {
+  var br = 1 + Math.sin(now / 1500) * 0.04;
+  EYES.forEach(function (e, i) {
+    if (!S.slices[i]) return;
+    ctx.save(); ctx.translate(e[0], e[1] + 1); ctx.scale(br, br);
+    ctx.fillStyle = '#d3e6ad'; ctx.strokeStyle = '#86ad6b'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(0, 0, 17, 0, 6.283); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(0, 0, 10, 0, 6.283); ctx.stroke();
+    ctx.fillStyle = '#eef5d6';
+    for (var s = 0; s < 6; s++) {
+      var a = s * 1.047 + 0.3;
+      ctx.beginPath(); ctx.ellipse(Math.cos(a) * 5.5, Math.sin(a) * 5.5, 1.6, 2.6, a, 0, 6.283); ctx.fill();
+    }
+    ctx.restore();
+  });
+}
+function stepDry(dt) {
+  var on = cur() === 'Dry' && !!S.dryer;
+  if (on) {
+    S.drops.forEach(function (d) {
+      if (d.hp > 0 && Math.hypot(d.x - S.dryer.x, d.y - S.dryer.y) < 38) {
+        d.hp -= dt / 1400;
+        if (d.hp <= 0) { d.hp = 0; sparkle(d.x, d.y, 2, 0.5); click(3000 + Math.random() * 1500, 0.04, 0.02, 1.5); }
+      }
+    });
+  }
+  if (on !== S.dryOn) {
+    S.dryOn = on;
+    setV(V.dry, on ? 0.2 : 0);
+    setV(V.hum, on ? 0.05 : 0);
+    if (on) chime(1, 0.05);
+  }
+  if (on && S.dryer) setV(V.hum, 0.05, 100 + (S.dryer.y / H) * 25);
+  charEl.classList.toggle('drying', on);
+}
+var breathT = 0;
+function stepBreath(now) {
+  if (!ac || now - breathT < 120) return;
+  breathT = now;
+  var on = cur() === 'Eyes' && S.slices[0] && S.slices[1], ph = (now % 7000) / 7000, lv = 0;
+  if (on) lv = ph < 0.45 ? Math.sin(ph / 0.45 * Math.PI) * 0.08 : ph > 0.55 ? Math.sin((ph - 0.55) / 0.45 * Math.PI) * 0.055 : 0;
+  setV(V.breath, lv, 600 + lv * 5000);
+}
+
+
+/* ---------- dye, razor and hoof drawing ---------- */
+function drawDye(now) {
+  var q = 0;
+  if (S.dye.setT0) {
+    q = (now - S.dye.setT0) / 800;
+    if (q >= 1) { S.dye.strokes = []; return; }
+  }
+  for (var i = 0; i < S.dye.strokes.length; i++) {
+    var s = S.dye.strokes[i];
+    ctx.globalAlpha = 0.8 * (1 - q); ctx.fillStyle = s.c;
+    ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 6.283); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+function drawRazor() {
+  if (M !== 'salon' || cur() !== 'Mask' || !S.scraping || !ptr || S.peeled) return;
+  ctx.save(); ctx.translate(ptr.x, ptr.y); ctx.rotate(-0.5);
+  ctx.fillStyle = '#7fc4b8'; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(2, -5, 30, 9, 4) : ctx.rect(2, -5, 30, 9); ctx.fill();
+  ctx.fillStyle = '#d8dee6'; ctx.fillRect(-12, -9, 16, 14);
+  ctx.fillStyle = '#fff'; ctx.fillRect(-12, 3, 16, 2);
+  ctx.restore();
+}
+var HOOFPATH = (typeof Path2D !== 'undefined') ? new Path2D('M150 52 C66 60 40 190 70 276 C84 314 116 332 150 332 C184 332 216 314 230 276 C260 190 234 60 150 52 Z') : null;
+function drawTool(name) {
+  if (!ptr || M !== 'stable') return;
+  ctx.save(); ctx.translate(ptr.x, ptr.y); ctx.lineCap = 'round';
+  if (name === 'Pick') {
+    ctx.strokeStyle = '#c9ced6'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(26, -22); ctx.stroke();
+    ctx.strokeStyle = '#9aa1ac'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-4, 5); ctx.stroke();
+    ctx.strokeStyle = '#2f6fb0'; ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(26, -22); ctx.lineTo(38, -33); ctx.stroke();
+  } else if (name === 'Hose') {
+    ctx.fillStyle = '#4a90c8'; ctx.fillRect(10, -28, 22, 12); ctx.fillStyle = '#b9d9f2'; ctx.fillRect(2, -26, 8, 8);
+    ctx.strokeStyle = 'rgba(169,214,247,0.7)'; ctx.lineWidth = 2;
+    for (var i = -1; i <= 1; i++) { ctx.beginPath(); ctx.moveTo(0, -22); ctx.lineTo(i * 6, 6); ctx.stroke(); }
+  } else if (name === 'Rasp') {
+    ctx.rotate(-0.4); ctx.fillStyle = '#aab1bc'; ctx.fillRect(-4, -8, 36, 12);
+    ctx.fillStyle = '#6b4b32'; ctx.fillRect(32, -6, 16, 8);
+    ctx.fillStyle = '#7c8490'; for (var t = 0; t < 7; t++) ctx.fillRect(-2 + t * 5, -8, 2, 12);
+  } else if (name === 'Oil') {
+    ctx.rotate(-0.6); ctx.fillStyle = '#8a5a34'; ctx.fillRect(4, -4, 34, 6);
+    ctx.fillStyle = '#f0b44e'; ctx.fillRect(-8, -7, 14, 12);
+  } else if (name === 'Shoe') {
+    ctx.rotate(-0.6); ctx.fillStyle = '#8a5a34'; ctx.fillRect(6, -3, 32, 6);
+    ctx.fillStyle = '#9aa1ac'; ctx.fillRect(-6, -10, 14, 18);
+  }
+  ctx.restore();
+}
+function drawHoof(now) {
+  var name = cur();
+  if (HOOFPATH) {
+    ctx.save(); ctx.clip(HOOFPATH);
+    if (!HF.hosed) {
+      for (var y = HC / 2; y < H; y += HC) for (var x = HC / 2; x < W; x += HC) {
+        if (HOOF(x, y) && !HF.cleaned[Math.floor(x / HC) + ',' + Math.floor(y / HC)]) {
+          ctx.fillStyle = 'rgba(88,62,44,0.42)'; ctx.fillRect(x - HC / 2, y - HC / 2, HC + 0.5, HC + 0.5);
+        }
+      }
+    }
+    var wet = HF.buffed ? 0.35 : 0.5;
+    if (HF.oil.length) {
+      ctx.fillStyle = 'rgba(240,170,70,' + wet + ')';
+      for (var i = 0; i < HF.oil.length; i++) { var o = HF.oil[i]; ctx.beginPath(); ctx.arc(o.x, o.y, o.r, 0, 6.283); ctx.fill(); }
+    }
+    if (HF.buffed) {
+      var q = Math.min(1, (now - HF.buffT0) / 700);
+      ctx.strokeStyle = 'rgba(255,255,255,' + (0.5 * q) + ')'; ctx.lineWidth = 6; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.arc(150, 192, 82, 2.5, 3.9); ctx.stroke();
+      ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(150, 192, 66, 3.0, 3.7); ctx.stroke();
+    }
+    ctx.restore();
+  }
+  for (var m = 0; m < HF.mud.length; m++) {
+    var d = HF.mud[m];
+    if (d.hp <= 0) continue;
+    ctx.fillStyle = d.c; ctx.beginPath(); ctx.arc(d.x, d.y, d.r, 0, 6.283); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.beginPath(); ctx.arc(d.x - d.r * 0.3, d.y - d.r * 0.3, d.r * 0.35, 0, 6.283); ctx.fill();
+  }
+  for (var f = 0; f < HF.flakes.length; f++) {
+    var fl = HF.flakes[f], a = 1;
+    if (fl.gone) { a = 1 - (now - fl.gone) / 300; if (a <= 0) continue; }
+    ctx.save(); ctx.translate(fl.x, fl.y); ctx.rotate(fl.a); ctx.globalAlpha = a;
+    ctx.fillStyle = '#d9c4a0'; ctx.beginPath(); ctx.moveTo(-6, -3); ctx.lineTo(4, -7); ctx.lineTo(8, 2); ctx.lineTo(-2, 6); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+  ctx.globalAlpha = 1;
+  for (var n = 0; n < 6; n++) {
+    if (!HF.nails[n]) continue;
+    ctx.fillStyle = '#2f3138'; ctx.beginPath(); ctx.arc(NAIL_HOLES[n][0], NAIL_HOLES[n][1], 5.5, 0, 6.283); ctx.fill();
+    ctx.fillStyle = '#c9ced6'; ctx.beginPath(); ctx.arc(NAIL_HOLES[n][0] - 1.5, NAIL_HOLES[n][1] - 1.5, 2, 0, 6.283); ctx.fill();
+  }
+  if (HF.shoeOn && name === 'Shoe') {
+    ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = 2;
+    for (var h = 0; h < 6; h++) if (!HF.nails[h]) {
+      ctx.beginPath(); ctx.arc(NAIL_HOLES[h][0], NAIL_HOLES[h][1], 7 + Math.sin(now / 250) * 1.5, 0, 6.283); ctx.stroke();
+    }
+  }
+  drawTool(name);
+}
+
 /* ---------- ui ---------- */
-var STEPS = ['Wash', 'Brush', 'Mask', 'Style'];
-var tabs = Array.prototype.slice.call(document.querySelectorAll('#tabs button'));
-var hint = $('#hint'), barfill = $('#barfill'), actBtn = $('#act'), panel = $('#stylepanel');
+var tabsEl = $('#tabs');
+var hint = $('#hint'), barfill = $('#barfill'), actBtn = $('#act'), panel = $('#stylepanel'), polishPanel = $('#polishpanel');
+function remaining() { var r = 0; S.drops.forEach(function (d) { if (d.hp > 0) r++; }); return r; }
+function paintedCount() { var c = 0; S.nails.forEach(function (n) { if (n >= 0) c++; }); return c; }
+function nailsHammered() { var c = 0; HF.nails.forEach(function (n) { if (n) c++; }); return c; }
 function progress() {
-  if (S.st === 0) return S.washed ? 1 : Math.min(1, count(S.washCells) / (washTotal * 0.6));
-  if (S.st === 1) return S.removed / S.tangles.length;
-  if (S.st === 2) return S.peeled ? 1 : Math.min(1, count(S.clayCells) / (clayTotal * 0.8));
+  var n = cur();
+  if (n === 'Wash') return S.washed ? 1 : Math.min(1, count(S.washCells) / (washTotal * 0.6));
+  if (n === 'Brush') return S.removed / S.tangles.length;
+  if (n === 'Dye') return S.dye.set ? 1 : Math.min(1, count(S.dye.cells) / (dyeTotal * 0.55));
+  if (n === 'Mask') {
+    if (S.peeled) return 1;
+    if (S.scraping) return Math.min(1, S.scrapeGone / Math.max(1, S.scrapeTotal) / 0.93);
+    return Math.min(1, count(S.clayCells) / (clayTotal * 0.8));
+  }
+  if (n === 'Eyes') return ((S.slices[0] ? 1 : 0) + (S.slices[1] ? 1 : 0)) / 2;
+  if (n === 'Dry') return 1 - remaining() / S.drops.length;
+  if (n === 'Nails') return S.topcoat ? 1 : paintedCount() / 5;
+  if (n === 'Pick') return HF.picked / HF.mud.length / 0.95;
+  if (n === 'Hose') return HF.hosed ? 1 : Math.min(1, count(HF.cleaned) / (hoofTotal * 0.9));
+  if (n === 'Rasp') return Math.min(1, HF.rasped / HF.flakes.length / 0.9);
+  if (n === 'Oil') return HF.buffed ? 1 : Math.min(1, count(HF.oilCells) / (hoofTotal * 0.75));
+  if (n === 'Shoe') return HF.shoeOn ? nailsHammered() / 6 : 0;
   return 1;
 }
+function renderNails() {
+  for (var i = 0; i < 5; i++) {
+    var el = document.getElementById('nail' + i), g = document.getElementById('gloss' + i), c = S.nails[i];
+    el.style.fill = c >= 0 ? POLISH[c][0] : 'rgba(255,255,255,0.3)';
+    g.style.display = S.topcoat && c >= 0 ? 'inline' : 'none';
+  }
+  document.getElementById('shoe').classList.toggle('on', HF.shoeOn);
+}
+function renderTabs() {
+  var names = STEPS[M]; tabsEl.innerHTML = ''; tabsEl.style.setProperty('--n', names.length);
+  names.forEach(function (nm, i) {
+    var b = document.createElement('button'); b.setAttribute('data-i', i); b.innerHTML = '<span>' + nm + '</span><i></i>';
+    b.addEventListener('click', function () { setStation(i); });
+    tabsEl.appendChild(b);
+  });
+}
+function renderSwatches() {
+  var n = cur(), box = $('#polish'); box.innerHTML = '';
+  var list = n === 'Dye' ? DYES : POLISH, sel2 = n === 'Dye' ? dyePick : polish;
+  list.forEach(function (o, i) {
+    var b = document.createElement('button'); b.className = 'sw'; b.style.background = o[0];
+    b.setAttribute('aria-label', o[1]); b.setAttribute('aria-pressed', String(sel2 === i));
+    b.addEventListener('click', function () {
+      if (n === 'Dye') dyePick = i; else polish = i;
+      click(2200, 0.08, 0.04, 1.5); chime(i, 0.05); renderSwatches();
+    });
+    box.appendChild(b);
+  });
+}
 function refresh() {
-  var p = progress(), st = S.st, left = S.tangles.length - S.removed;
-  if (left === 0) S.done[1] = true;
-  var key = [st, Math.round(p * 100), S.washed, !!S.rinseT0, S.peeled, !!S.peelT0, left, S.done.join()].join('|');
-  if (key === S.key) return;
-  S.key = key;
-  barfill.style.width = Math.round(p * 100) + '%';
-  var h, label = '', show = true, on = true;
-  if (st === 0) {
+  var st = X(), n = cur(), p = progress(), left = S.tangles.length - S.removed, rem = remaining(), pc = paintedCount();
+  if (left === 0) S.done.Brush = true;
+  if (rem === 0) S.done.Dry = true;
+  if (S.scraping && !S.peelT0 && !S.peeled && S.scrapeGone / Math.max(1, S.scrapeTotal) >= 0.93) S.peelT0 = performance.now();
+  if (HF.picked / HF.mud.length >= 0.95 && !HF.done.Pick) { HF.done.Pick = true; HF.mud.forEach(function (m) { m.hp = 0; }); chime(5, 0.08); }
+  if (!HF.hosed && count(HF.cleaned) >= hoofTotal * 0.9) { HF.hosed = true; HF.done.Hose = true; chime(4, 0.08); sparkle(150, 190, 12, 1.4, '#a9d6f7'); }
+  if (HF.rasped / HF.flakes.length >= 0.9 && !HF.done.Rasp) { HF.done.Rasp = true; HF.flakes.forEach(function (f) { if (!f.gone) f.gone = performance.now(); }); chime(5, 0.08); }
+  if (HF.shoeOn && nailsHammered() === 6 && !HF.done.Shoe) {
+    HF.done.Shoe = true; [0, 2, 4, 7].forEach(function (m, i) { setTimeout(function () { chime(m, 0.08); }, i * 150); }); sparkle(150, 190, 24, 2, '#e8edf2');
+  }
+  var key = [M, st.st, Math.round(p * 100), S.washed, !!S.rinseT0, S.peeled, !!S.peelT0, S.scraping, left, rem, JSON.stringify(S.done), JSON.stringify(HF.done),
+    S.nails.join(), S.topcoat, S.slices.join(), S.dye.set, HF.hosed, HF.buffed, HF.shoeOn].join('|');
+  if (key === st.key) return;
+  st.key = key;
+  barfill.style.width = Math.round(Math.min(1, p) * 100) + '%';
+  var h = '', label = '', show = true, on = true;
+  if (n === 'Wash') {
     label = 'Rinse'; show = !S.washed; on = p >= 1 && !S.rinseT0;
     h = S.washed ? 'Squeaky clean. On to brushing.' : S.rinseT0 ? 'Rinsing...' : p >= 1 ? 'Lots of foam. Tap Rinse.' : 'Drag over the hair and face to build up soft foam.';
-  } else if (st === 1) {
+  } else if (n === 'Brush') {
     show = false;
-    h = left === 0 ? 'Smooth and shiny. Time for a mask.' : 'Brush the tangles out of the hair. ' + left + ' left.';
-  } else if (st === 2) {
-    label = 'Peel off'; show = !S.peeled; on = p >= 1 && !S.peelT0;
-    h = S.peeled ? 'Fresh skin. Now pick a look.' : S.peelT0 ? 'Peeling...' : p >= 1 ? 'The mask is set. Tap Peel off.' : 'Paint a clay mask across the face.';
-  } else {
-    label = 'Reveal'; h = 'Pick skin, hair, outfit and extras. Tap the portrait for sparkles.';
+    h = left === 0 ? 'Smooth and shiny. Pick a hair color next.' : 'Brush the tangles out of the hair. ' + left + ' left.';
+  } else if (n === 'Dye') {
+    label = 'Set color'; show = !S.dye.set; on = p >= 1;
+    h = S.dye.set ? 'Gorgeous color. Time for a mask.' : p >= 1 ? 'Nicely covered. Tap Set color.' : 'Pick a color, then brush it over the hair.';
+  } else if (n === 'Mask') {
+    show = false;
+    h = S.peeled ? 'Fresh skin. Next, rest those eyes.' : S.scraping ? 'Keep scraping. Drag the razor across the mask.' : p >= 1 ? 'The mask is set. Drag the razor over it to scrape it off.' : 'Paint a clay mask across the face.';
+  } else if (n === 'Eyes') {
+    show = false;
+    h = p >= 1 ? 'Ahh. Breathe in slowly, and out.' : 'Tap each eye to rest a cool cucumber slice on it.';
+  } else if (n === 'Dry') {
+    show = false;
+    h = rem === 0 ? 'Dry, warm and fluffy.' : 'Hold the dryer over the damp spots. Move it around.';
+  } else if (n === 'Nails') {
+    label = 'Top coat'; show = !S.topcoat; on = pc === 5;
+    h = S.topcoat ? 'Glossy! Now put your whole look together.' : pc === 5 ? 'All painted. Tap Top coat for shine.' : 'Pick a polish, then tap each nail to paint it.';
+  } else if (n === 'Style') {
+    label = 'Reveal';
+    h = 'Mix and match. Your look is saved on this phone. Tap the portrait for sparkles.';
+  } else if (n === 'Pick') {
+    show = false; h = HF.done.Pick ? 'All the mud is out. Next, a rinse.' : 'Drag the hoof pick to scrape out the mud and stones.';
+  } else if (n === 'Hose') {
+    show = false; h = HF.hosed ? 'Sparkling clean. Next, smooth the edges.' : 'Drag the hose over the hoof to wash away the grime.';
+  } else if (n === 'Rasp') {
+    show = false; h = HF.done.Rasp ? 'Nice and even. Time for hoof oil.' : 'Drag the rasp along the edge to file off the rough flakes.';
+  } else if (n === 'Oil') {
+    label = 'Buff'; show = !HF.buffed; on = p >= 1;
+    h = HF.buffed ? 'Glossy. Last step: the shoe.' : p >= 1 ? 'Well oiled. Tap Buff for shine.' : 'Brush hoof oil all over the hoof.';
+  } else if (n === 'Shoe') {
+    label = 'Fit shoe'; show = !HF.shoeOn; on = true;
+    h = HF.done.Shoe ? 'Fresh shoes. Good horse!' : HF.shoeOn ? 'Tap each glowing nail hole to hammer a nail in.' : 'Tap Fit shoe to set the horseshoe on the hoof.';
   }
   hint.textContent = h; actBtn.textContent = label; actBtn.hidden = !show; actBtn.disabled = !on;
-  tabs.forEach(function (b, i) {
-    b.setAttribute('aria-selected', String(i === st));
-    b.classList.toggle('done', !!S.done[i]);
-    b.classList.toggle('nudge', !!S.done[st] && i === st + 1 && st < 3);
-  });
-  panel.hidden = st !== 3;
+  var names = STEPS[M], bs = tabsEl.children, dn = M === 'salon' ? S.done : HF.done;
+  for (var i = 0; i < bs.length; i++) {
+    bs[i].setAttribute('aria-selected', String(i === st.st));
+    bs[i].classList.toggle('done', !!dn[names[i]]);
+    bs[i].classList.toggle('nudge', !!dn[names[st.st]] && i === st.st + 1);
+  }
+  var salon = M === 'salon';
+  panel.hidden = !(salon && n === 'Style');
+  polishPanel.hidden = !(salon && (n === 'Nails' || n === 'Dye'));
+  stage.setAttribute('data-view', !salon ? 'hoof' : n === 'Nails' ? 'hands' : 'face');
   charEl.style.setProperty('--glow', (S.washed ? 0.35 : 0) + (S.peeled ? 0.4 : 0));
   charEl.style.setProperty('--shine', (0.8 * S.removed / S.tangles.length).toFixed(2));
+  renderNails();
 }
-function setStation(i) { S.st = i; S.key = ''; silence(); click(1800, 0.08, 0.04, 1.2); refresh(); }
-tabs.forEach(function (b) { b.addEventListener('click', function () { setStation(+b.getAttribute('data-i')); }); });
+function setStation(i) { X().st = i; X().key = ''; S.dryer = null; silence(); renderSwatches(); click(1800, 0.08, 0.04, 1.2); refresh(); }
+function setMode(m) {
+  if (m === M) return;
+  M = m; S.dryer = null; silence(); setV(V.water, 0);
+  S.reveal = false; app.classList.remove('revealed'); $('#revealbar').hidden = true;
+  stage.setAttribute('data-scene', M === 'stable' ? 'stable' : OPTS.scene[sel.scene][0]);
+  $('#m-salon').setAttribute('aria-pressed', String(M === 'salon'));
+  $('#m-stable').setAttribute('aria-pressed', String(M === 'stable'));
+  renderTabs(); renderSwatches(); X().key = ''; click(1800, 0.1, 0.05, 1.2); chime(M === 'salon' ? 2 : 4, 0.06); refresh();
+}
+$('#m-salon').addEventListener('click', function () { setMode('salon'); });
+$('#m-stable').addEventListener('click', function () { setMode('stable'); });
 actBtn.addEventListener('click', function () {
-  if (S.st === 0 && !S.rinseT0 && !S.washed) { S.rinseT0 = performance.now(); setV(V.water, 0.22, 4200); }
-  else if (S.st === 2 && !S.peelT0 && !S.peeled) { S.peelT0 = performance.now(); }
-  else if (S.st === 3) {
-    S.reveal = true; S.done[3] = true; app.classList.add('revealed'); $('#revealbar').hidden = false;
-    [0, 2, 4, 5, 7].forEach(function (n, i) { setTimeout(function () { chime(n, 0.08); }, i * 160); });
+  var n = cur();
+  if (n === 'Wash' && !S.rinseT0 && !S.washed) { S.rinseT0 = performance.now(); setV(V.water, 0.22, 4200); }
+  else if (n === 'Dye' && !S.dye.set) {
+    S.dye.set = true; S.dye.setT0 = performance.now(); dyeColor = DYES[dyePick][0]; applyLook(); S.done.Dye = true;
+    chime(3, 0.09); chime(6, 0.06); sparkle(150, 130, 18, 1.6);
+  }
+  else if (n === 'Nails' && !S.topcoat) {
+    S.topcoat = true; S.done.Nails = true; chime(5, 0.09); chime(7, 0.06);
+    NAILS.forEach(function (nl) { sparkle(nl[0], nl[1], 6, 1); });
+  }
+  else if (n === 'Style') {
+    S.reveal = true; S.done.Style = true; app.classList.add('revealed'); $('#revealbar').hidden = false;
+    [0, 2, 4, 5, 7].forEach(function (m, i) { setTimeout(function () { chime(m, 0.08); }, i * 160); });
     sparkle(150, 170, 30, 2);
   }
-  S.key = ''; refresh();
+  else if (n === 'Oil' && !HF.buffed) { HF.buffed = true; HF.buffT0 = performance.now(); HF.done.Oil = true; chime(5, 0.09); sparkle(150, 190, 16, 1.5, '#fff1c9'); }
+  else if (n === 'Shoe' && !HF.shoeOn) { HF.shoeOn = true; HF.shoeT0 = performance.now(); click(1400, 0.18, 0.08, 1); chime(2, 0.07); }
+  X().key = ''; refresh();
 });
 $('#keep').addEventListener('click', function () { S.reveal = false; app.classList.remove('revealed'); $('#revealbar').hidden = true; });
 $('#again').addEventListener('click', function () {
-  var sc = S.sparks; fresh(); S.sparks = sc; app.classList.remove('revealed'); $('#revealbar').hidden = true;
-  click(1800, 0.1, 0.05, 1.2); refresh();
+  var sc = S.sparks; fresh(); S.sparks = sc; dyeColor = null; applyLook(); M = 'salon';
+  app.classList.remove('revealed'); $('#revealbar').hidden = true;
+  $('#m-salon').setAttribute('aria-pressed', 'true'); $('#m-stable').setAttribute('aria-pressed', 'false');
+  stage.setAttribute('data-scene', OPTS.scene[sel.scene][0]);
+  renderTabs(); renderSwatches(); click(1800, 0.1, 0.05, 1.2); refresh();
 });
+renderTabs(); renderSwatches();
 
 /* ---------- style panel ---------- */
-var CATS = [['skin', 'Skin'], ['hair', 'Hair'], ['outfit', 'Outfit'], ['extra', 'Extras'], ['scene', 'Scene']];
+var CATS = [['skin', 'Skin'], ['hair', 'Hair'], ['cut', 'Cut'], ['top', 'Top'], ['outfit', 'Color'], ['extra', 'Extras'], ['scene', 'Scene']];
 var OPTS = {
   skin: [['#f6d3b8', 'Fair'], ['#ecc19c', 'Light'], ['#cf9770', 'Medium'], ['#a56d4b', 'Tan'], ['#6f4833', 'Deep']],
   hair: [['#5b3a2e', 'Chestnut'], ['#2b2540', 'Ink'], ['#c98f4a', 'Honey'], ['#b5586f', 'Rose'], ['#8a73c2', 'Lilac']],
   outfit: [['#7fa6c9', 'Cornflower'], ['#e7b8a4', 'Blush'], ['#8fb08c', 'Sage'], ['#f1c75f', 'Butter'], ['#c9c1e8', 'Lavender']],
-  extra: [['none', 'Bare'], ['bow', 'Bow'], ['flowers', 'Flowers'], ['glasses', 'Glasses'], ['band', 'Headband']],
+  cut: [['long', 'Long'], ['bob', 'Bob'], ['buns', 'Space buns']],
+  top: [['tee', 'Tee'], ['hoodie', 'Hoodie'], ['turtle', 'Turtleneck']],
+  extra: [['none', 'Bare'], ['bow', 'Bow'], ['flowers', 'Flowers'], ['glasses', 'Glasses'], ['band', 'Headband'], ['beanie', 'Beanie'], ['ears', 'Cat ears'], ['earrings', 'Earrings'], ['stars', 'Star clips']],
   scene: [['lamp', 'Lamp room'], ['rain', 'Rainy window'], ['dusk', 'Dusk'], ['moss', 'Moss']]
 };
-var sel = { skin: 1, hair: 0, outfit: 0, extra: 0, scene: 0 }, cat = 'skin';
+var sel = { skin: 1, hair: 0, cut: 0, top: 0, outfit: 0, extra: 0, scene: 0 }, cat = 'skin';
+var LOOK_KEY = 'lamplight.look.v1';
+try {
+  var saved = JSON.parse(localStorage.getItem(LOOK_KEY) || 'null');
+  if (saved) Object.keys(sel).forEach(function (k) { var n = saved[k]; if (typeof n === 'number' && n >= 0 && n < OPTS[k].length && n % 1 === 0) sel[k] = n; });
+} catch (e) {}
+function saveLook() { try { localStorage.setItem(LOOK_KEY, JSON.stringify(sel)); } catch (e) {} }
 function applyLook() {
   charEl.style.setProperty('--skin', OPTS.skin[sel.skin][0]);
-  charEl.style.setProperty('--hair', OPTS.hair[sel.hair][0]);
+  charEl.style.setProperty('--hair', dyeColor || OPTS.hair[sel.hair][0]);
   charEl.style.setProperty('--outfit', OPTS.outfit[sel.outfit][0]);
+  var hs = document.getElementById('hands');
+  hs.style.setProperty('--skin', OPTS.skin[sel.skin][0]);
+  hs.style.setProperty('--outfit', OPTS.outfit[sel.outfit][0]);
   charEl.setAttribute('data-extra', OPTS.extra[sel.extra][0]);
-  stage.setAttribute('data-scene', OPTS.scene[sel.scene][0]);
+  charEl.setAttribute('data-cut', OPTS.cut[sel.cut][0]);
+  charEl.setAttribute('data-top', OPTS.top[sel.top][0]);
+  stage.setAttribute('data-scene', M === 'stable' ? 'stable' : OPTS.scene[sel.scene][0]);
 }
 function renderCats() {
   var box = $('#cats'); box.innerHTML = '';
@@ -536,7 +1056,7 @@ function renderOpts() {
     if (colorful) { b.style.background = o[0]; b.setAttribute('aria-label', o[1]); } else b.textContent = o[1];
     b.setAttribute('aria-pressed', String(sel[cat] === i));
     b.addEventListener('click', function () {
-      sel[cat] = i; applyLook(); S.done[3] = true; S.key = '';
+      sel[cat] = i; if (cat === 'hair') dyeColor = null; applyLook(); saveLook(); S.done.Style = true; S.key = '';
       click(2200, 0.1, 0.05, 1.5); chime(i + 1, 0.07); sparkle(150, 170, 8, 1.2);
       renderOpts(); refresh();
     });
@@ -546,12 +1066,23 @@ function renderOpts() {
 applyLook(); renderCats(); renderOpts();
 
 /* ---------- loop ---------- */
+var lastT = performance.now();
 function frame() {
-  var now = performance.now(), k = cv.width / W;
+  var now = performance.now(), dt = Math.min(64, now - lastT); lastT = now;
+  var k = cv.width / W, n = cur();
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height);
   ctx.setTransform(k, 0, 0, k, 0, 0);
-  if (S.st < 3) drawTangles(now);
-  drawFoam(now); drawClay(now); drawTrail(now);
+  if (M === 'stable') {
+    drawHoof(now);
+  } else if (n !== 'Nails') {
+    if (n !== 'Style') drawTangles(now);
+    drawFoam(now); drawClay(now);
+    if (n === 'Dye') drawDye(now);
+    if (n === 'Dry') drawDrops(now);
+    if (n === 'Eyes') drawSlices(now);
+    drawTrail(now); drawDryer(now); drawRazor();
+  }
+  stepDry(dt); stepBreath(now);
   if (S.reveal && Math.random() < (reduce ? 0.05 : 0.18)) sparkle(60 + Math.random() * 180, 70 + Math.random() * 220, 1, 0.5);
   drawSparks(now);
   refresh();
