@@ -52,7 +52,7 @@ h1 { font-family: var(--display); font-weight: 500; font-size: 1.2rem; margin: 0
 #snd[aria-pressed="false"] { opacity: 0.6; }
 #stagewrap { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
 #stage {
-  height: 100%; aspect-ratio: 300 / 360; max-width: 100%; position: relative; overflow: hidden;
+  width: 100%; aspect-ratio: 300 / 360; max-height: 100%; position: relative; overflow: hidden;
   border-radius: 28px; border: 1px solid var(--line);
   background: radial-gradient(circle at 50% 28%, #70505a 0%, #3b2d45 60%, #2a2238 100%);
   touch-action: none;
@@ -258,11 +258,13 @@ var reduce = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce
 
 /* ---------- canvas sizing ---------- */
 function resize() {
+  var wr = $('#stagewrap').getBoundingClientRect(), sw = Math.min(wr.width, wr.height * W / H);
+  if (sw > 0) { stage.style.width = sw + 'px'; stage.style.height = (sw * H / W) + 'px'; }
   var r = stage.getBoundingClientRect(), d = Math.min(2, window.devicePixelRatio || 1);
   cv.width = Math.max(1, Math.round(r.width * d));
   cv.height = Math.max(1, Math.round(r.height * d));
 }
-if (window.ResizeObserver) new ResizeObserver(resize).observe(stage);
+if (window.ResizeObserver) new ResizeObserver(resize).observe($('#stagewrap'));
 resize();
 window.addEventListener('resize', resize);
 
@@ -292,7 +294,7 @@ function initAudio() {
   var AC = window.AudioContext || window.webkitAudioContext;
   if (!AC) return;
   ac = new AC();
-  master = ac.createGain(); master.gain.value = muted ? 0 : 0.9; master.connect(ac.destination);
+  master = ac.createGain(); master.gain.value = muted ? 0 : 0.55; master.connect(ac.destination);
   nb = ac.createBuffer(1, ac.sampleRate * 2, ac.sampleRate);
   var d = nb.getChannelData(0);
   for (var i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
@@ -305,8 +307,8 @@ function initAudio() {
     setTimeout(crack, 150 + Math.random() * 1100);
   })();
   (function drift() {
-    if (ac && ac.state === 'running' && !muted) chime(Math.floor(Math.random() * 8), 0.025);
-    setTimeout(drift, 3500 + Math.random() * 4500);
+    if (ac && ac.state === 'running' && !muted) chime(Math.floor(Math.random() * 8), 0.012);
+    setTimeout(drift, 7000 + Math.random() * 7000);
   })();
   if (ac.state === 'suspended') ac.resume();
 }
@@ -327,7 +329,7 @@ function chime(n, gain) {
     var o = ac.createOscillator(); o.type = 'sine'; o.frequency.value = f * m;
     var g = ac.createGain();
     g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime((gain || 0.09) / (i + 1.6), t + 0.015);
+    g.gain.exponentialRampToValueAtTime(0.6 * (gain || 0.09) / (i + 1.6), t + 0.015);
     g.gain.exponentialRampToValueAtTime(0.0001, t + 1.7);
     o.connect(g); g.connect(master); o.start(t); o.stop(t + 1.8);
   });
@@ -336,7 +338,7 @@ $('#snd').addEventListener('click', function () {
   muted = !muted;
   this.setAttribute('aria-pressed', String(!muted));
   this.textContent = muted ? 'Sound off' : 'Sound on';
-  if (master) master.gain.setTargetAtTime(muted ? 0 : 0.9, ac.currentTime, 0.05);
+  if (master) master.gain.setTargetAtTime(muted ? 0 : 0.55, ac.currentTime, 0.05);
 });
 document.addEventListener('visibilitychange', function () {
   if (!ac) return;
@@ -455,34 +457,39 @@ function paintNear(p, down) {
 function actStable(name, p, prev, v, down) {
   var moving = !down, from = prev || p, lv = Math.min(1, v / 0.5);
   if (name === 'Pick') {
-    HF.mud.forEach(function (m) {
-      if (m.hp > 0 && Math.hypot(p.x - m.x, p.y - m.y) < 17) {
-        m.hp = 0; HF.picked++; click(700 + Math.random() * 500, 0.12, 0.05, 1);
-        sparkle(m.x, m.y, 3, 0.8, m.c);
-      }
+    along(from, p, 8, function (x, y) {
+      HF.mud.forEach(function (m) {
+        if (m.hp > 0 && Math.hypot(x - m.x, y - m.y) < 17) {
+          m.hp = 0; HF.picked++; click(700 + Math.random() * 500, 0.12, 0.05, 1);
+          sparkle(m.x, m.y, 3, 0.8, m.c);
+        }
+      });
     });
     setV(V.scrub, moving ? lv * 0.2 : 0, 1300 + Math.random() * 400);
   } else if (name === 'Hose') {
     if (HF.hosed) return;
     along(from, p, 6, function (x, y) {
+      eraseDirt(x, y);
       for (var dx = -16; dx <= 16; dx += 8) for (var dy = -16; dy <= 16; dy += 8) {
         if (dx * dx + dy * dy <= 300) mark(HF.cleaned, x + dx, y + dy, HC, HOOF);
       }
     });
     if (moving) { sparkle(p.x, p.y, 2, 0.8, '#a9d6f7'); setV(V.water, 0.2 + lv * 0.08, 4200); } else setV(V.water, 0);
   } else if (name === 'Rasp') {
-    HF.flakes.forEach(function (f) {
-      if (!f.gone && moving && Math.hypot(p.x - f.x, p.y - f.y) < 19) {
-        f.gone = performance.now(); HF.rasped++; click(2600 + Math.random() * 800, 0.1, 0.04, 2);
-        sparkle(f.x, f.y, 3, 0.7, '#d9c4a0');
-      }
+    if (moving) along(from, p, 8, function (x, y) {
+      HF.flakes.forEach(function (f) {
+        if (!f.gone && Math.hypot(x - f.x, y - f.y) < 19) {
+          f.gone = performance.now(); HF.rasped++; click(2600 + Math.random() * 800, 0.1, 0.04, 2);
+          sparkle(f.x, f.y, 3, 0.7, '#d9c4a0');
+        }
+      });
     });
     setV(V.brush, moving ? lv * 0.24 : 0, 2400 + Math.random() * 600);
   } else if (name === 'Oil') {
     if (HF.buffed) return;
     along(from, p, 5, function (x, y) {
       if (!HOOF(x, y)) return;
-      HF.oil.push({ x: x, y: y, r: 9 + Math.random() * 4 }); mark(HF.oilCells, x, y, HC, HOOF);
+      paintOil(x, y, 9 + Math.random() * 4); [-8, 0, 8].forEach(function (ox) { [-8, 0, 8].forEach(function (oy) { mark(HF.oilCells, x + ox, y + oy, HC, HOOF); }); });
     });
     if (HF.oil.length > 900) HF.oil.splice(0, HF.oil.length - 900);
     setV(V.squish, moving ? lv * 0.2 : 0, 750);
@@ -519,18 +526,20 @@ function act(p, prev, v, down) {
       if (S.trail.length > 90) S.trail.shift();
     }
     if (moving) setV(V.brush, Math.min(1, v / 0.6) * 0.26, 5200 + (p.y / H) * 2600); else setV(V.brush, 0);
-    S.tangles.forEach(function (t) {
-      if (!t.gone && moving && Math.hypot(p.x - t.x, p.y - t.y) < 28) {
-        t.gone = now; S.removed++;
-        sparkle(t.x, t.y, 8, 1); chime(S.removed + 1, 0.08); click(3500, 0.1, 0.04, 2);
-      }
+    if (moving) along(prev || p, p, 10, function (x, y) {
+      S.tangles.forEach(function (t) {
+        if (!t.gone && Math.hypot(x - t.x, y - t.y) < 28) {
+          t.gone = now; S.removed++;
+          sparkle(t.x, t.y, 8, 1); chime(S.removed + 1, 0.08); click(3500, 0.1, 0.04, 2);
+        }
+      });
     });
   } else if (name === 'Dye') {
     if (S.dye.set) return;
     var f1 = prev || p;
     along(f1, p, 5, function (x, y) {
       if (!HAIRZ(x, y)) return;
-      S.dye.strokes.push({ x: x, y: y, r: 8 + Math.random() * 3, c: DYES[dyePick][0] }); mark(S.dye.cells, x, y, DC, HAIRZ);
+      S.dye.strokes.push({ x: x, y: y, r: 8 + Math.random() * 3, c: DYES[dyePick][0] }); [-6, 0, 6].forEach(function (ox) { [-6, 0, 6].forEach(function (oy) { mark(S.dye.cells, x + ox, y + oy, DC, HAIRZ); }); });
     });
     if (S.dye.strokes.length > 1400) S.dye.strokes.splice(0, S.dye.strokes.length - 1400);
     if (moving) setV(V.squish, Math.min(1, v / 0.5) * 0.22, 900); else setV(V.squish, 0);
@@ -546,7 +555,7 @@ function act(p, prev, v, down) {
         if (!FACE(x, y)) return;
         any = true;
         S.clay.push({ x: x + (Math.random() - 0.5) * 6, y: y + (Math.random() - 0.5) * 6, r: 9 + Math.random() * 6, thr: Math.random(), l: Math.random() * 14 - 7, gone: 0 });
-        mark(S.clayCells, x, y, CC, FACE);
+        [-8, 0, 8].forEach(function (ox) { [-8, 0, 8].forEach(function (oy) { mark(S.clayCells, x + ox, y + oy, CC, FACE); }); });
       });
       if (S.clay.length > 1500) S.clay.splice(0, S.clay.length - 1500);
       if (moving && any) setV(V.squish, Math.min(1, v / 0.4) * 0.3, 450 + Math.random() * 350); else setV(V.squish, 0);
@@ -587,8 +596,12 @@ cv.addEventListener('pointerdown', function (e) {
 });
 cv.addEventListener('pointermove', function (e) {
   if (!last) return;
-  var p = pos(e), d = Math.hypot(p.x - last.x, p.y - last.y), dt = Math.max(6, p.t - last.t);
-  act(p, last, d / dt, false); last = p;
+  var evs = (e.getCoalescedEvents && e.getCoalescedEvents()) || [];
+  if (!evs.length) evs = [e];
+  for (var i = 0; i < evs.length; i++) {
+    var p = pos(evs[i]), d = Math.hypot(p.x - last.x, p.y - last.y), dt = Math.max(6, p.t - last.t);
+    act(p, last, d / dt, false); last = p;
+  }
 });
 function up() { last = null; ptr = null; S.dryer = null; silence(); if (M === 'stable') setV(V.water, 0); }
 cv.addEventListener('pointerup', up);
@@ -791,22 +804,27 @@ function drawTool(name) {
   }
   ctx.restore();
 }
+var dirtCv = document.createElement('canvas'); dirtCv.width = W * 2; dirtCv.height = H * 2;
+var dctx = dirtCv.getContext('2d');
+var oilCv = document.createElement('canvas'); oilCv.width = W * 2; oilCv.height = H * 2;
+var octx = oilCv.getContext('2d');
+function paintOil(x, y, r) { octx.setTransform(2, 0, 0, 2, 0, 0); octx.fillStyle = '#f0b050'; octx.beginPath(); octx.arc(x, y, r, 0, 6.283); octx.fill(); }
+function resetDirt() {
+  octx.setTransform(1, 0, 0, 1, 0, 0); octx.clearRect(0, 0, oilCv.width, oilCv.height);
+  dctx.setTransform(2, 0, 0, 2, 0, 0); dctx.globalCompositeOperation = 'source-over'; dctx.clearRect(0, 0, W, H);
+  if (HOOFPATH) { dctx.save(); dctx.clip(HOOFPATH); dctx.fillStyle = 'rgba(88,62,44,0.5)'; dctx.fillRect(0, 0, W, H); dctx.restore(); }
+}
+function eraseDirt(x, y) {
+  dctx.globalCompositeOperation = 'destination-out'; dctx.fillStyle = '#000';
+  dctx.beginPath(); dctx.arc(x, y, 18, 0, 6.283); dctx.fill(); dctx.globalCompositeOperation = 'source-over';
+}
+resetDirt();
 function drawHoof(now) {
   var name = cur();
   if (HOOFPATH) {
     ctx.save(); ctx.clip(HOOFPATH);
-    if (!HF.hosed) {
-      for (var y = HC / 2; y < H; y += HC) for (var x = HC / 2; x < W; x += HC) {
-        if (HOOF(x, y) && !HF.cleaned[Math.floor(x / HC) + ',' + Math.floor(y / HC)]) {
-          ctx.fillStyle = 'rgba(88,62,44,0.42)'; ctx.fillRect(x - HC / 2, y - HC / 2, HC + 0.5, HC + 0.5);
-        }
-      }
-    }
-    var wet = HF.buffed ? 0.35 : 0.5;
-    if (HF.oil.length) {
-      ctx.fillStyle = 'rgba(240,170,70,' + wet + ')';
-      for (var i = 0; i < HF.oil.length; i++) { var o = HF.oil[i]; ctx.beginPath(); ctx.arc(o.x, o.y, o.r, 0, 6.283); ctx.fill(); }
-    }
+    if (!HF.hosed) ctx.drawImage(dirtCv, 0, 0, W, H);
+    ctx.globalAlpha = HF.shoeOn ? 0.1 : HF.buffed ? 0.24 : 0.42; ctx.drawImage(oilCv, 0, 0, W, H); ctx.globalAlpha = 1;
     if (HF.buffed) {
       var q = Math.min(1, (now - HF.buffT0) / 700);
       ctx.strokeStyle = 'rgba(255,255,255,' + (0.5 * q) + ')'; ctx.lineWidth = 6; ctx.lineCap = 'round';
@@ -863,7 +881,7 @@ function progress() {
   if (n === 'Dry') return 1 - remaining() / S.drops.length;
   if (n === 'Nails') return S.topcoat ? 1 : paintedCount() / 5;
   if (n === 'Pick') return HF.picked / HF.mud.length / 0.95;
-  if (n === 'Hose') return HF.hosed ? 1 : Math.min(1, count(HF.cleaned) / (hoofTotal * 0.9));
+  if (n === 'Hose') return HF.hosed ? 1 : Math.min(1, count(HF.cleaned) / (hoofTotal * 0.85));
   if (n === 'Rasp') return Math.min(1, HF.rasped / HF.flakes.length / 0.9);
   if (n === 'Oil') return HF.buffed ? 1 : Math.min(1, count(HF.oilCells) / (hoofTotal * 0.75));
   if (n === 'Shoe') return HF.shoeOn ? nailsHammered() / 6 : 0;
@@ -904,16 +922,16 @@ function refresh() {
   if (rem === 0) S.done.Dry = true;
   if (S.scraping && !S.peelT0 && !S.peeled && S.scrapeGone / Math.max(1, S.scrapeTotal) >= 0.93) S.peelT0 = performance.now();
   if (HF.picked / HF.mud.length >= 0.95 && !HF.done.Pick) { HF.done.Pick = true; HF.mud.forEach(function (m) { m.hp = 0; }); chime(5, 0.08); }
-  if (!HF.hosed && count(HF.cleaned) >= hoofTotal * 0.9) { HF.hosed = true; HF.done.Hose = true; chime(4, 0.08); sparkle(150, 190, 12, 1.4, '#a9d6f7'); }
+  if (!HF.hosed && count(HF.cleaned) >= hoofTotal * 0.85) { HF.hosed = true; HF.done.Hose = true; chime(4, 0.08); sparkle(150, 190, 12, 1.4, '#a9d6f7'); }
   if (HF.rasped / HF.flakes.length >= 0.9 && !HF.done.Rasp) { HF.done.Rasp = true; HF.flakes.forEach(function (f) { if (!f.gone) f.gone = performance.now(); }); chime(5, 0.08); }
   if (HF.shoeOn && nailsHammered() === 6 && !HF.done.Shoe) {
     HF.done.Shoe = true; [0, 2, 4, 7].forEach(function (m, i) { setTimeout(function () { chime(m, 0.08); }, i * 150); }); sparkle(150, 190, 24, 2, '#e8edf2');
   }
-  var key = [M, st.st, Math.round(p * 100), S.washed, !!S.rinseT0, S.peeled, !!S.peelT0, S.scraping, left, rem, JSON.stringify(S.done), JSON.stringify(HF.done),
-    S.nails.join(), S.topcoat, S.slices.join(), S.dye.set, HF.hosed, HF.buffed, HF.shoeOn].join('|');
+  var key = [M, st.st, Math.floor(p * 100), p >= 1, S.washed, !!S.rinseT0, S.peeled, !!S.peelT0, S.scraping, left, rem, JSON.stringify(S.done), JSON.stringify(HF.done),
+    S.nails.join(), S.topcoat, S.slices.join(), S.dye.set, HF.hosed, HF.buffed, HF.shoeOn, saveState].join('|');
   if (key === st.key) return;
   st.key = key;
-  barfill.style.width = Math.round(Math.min(1, p) * 100) + '%';
+  barfill.style.width = (p >= 1 ? 100 : Math.min(99, Math.floor(p * 100))) + '%';
   var h = '', label = '', show = true, on = true;
   if (n === 'Wash') {
     label = 'Rinse'; show = !S.washed; on = p >= 1 && !S.rinseT0;
@@ -938,7 +956,7 @@ function refresh() {
     h = S.topcoat ? 'Glossy! Now put your whole look together.' : pc === 5 ? 'All painted. Tap Top coat for shine.' : 'Pick a polish, then tap each nail to paint it.';
   } else if (n === 'Style') {
     label = 'Reveal';
-    h = 'Mix and match. Your look is saved on this phone. Tap the portrait for sparkles.';
+    h = 'Mix and match. ' + (saveState === 'fail' ? "This page can't save your look. Open the game from your own link or Home Screen icon." : 'Your look is saved on this phone.') + ' Tap the portrait for sparkles.';
   } else if (n === 'Pick') {
     show = false; h = HF.done.Pick ? 'All the mud is out. Next, a rinse.' : 'Drag the hoof pick to scrape out the mud and stones.';
   } else if (n === 'Hose') {
@@ -983,7 +1001,7 @@ actBtn.addEventListener('click', function () {
   var n = cur();
   if (n === 'Wash' && !S.rinseT0 && !S.washed) { S.rinseT0 = performance.now(); setV(V.water, 0.22, 4200); }
   else if (n === 'Dye' && !S.dye.set) {
-    S.dye.set = true; S.dye.setT0 = performance.now(); dyeColor = DYES[dyePick][0]; applyLook(); S.done.Dye = true;
+    S.dye.set = true; S.dye.setT0 = performance.now(); dyeColor = DYES[dyePick][0]; applyLook(); saveLook(); S.done.Dye = true;
     chime(3, 0.09); chime(6, 0.06); sparkle(150, 130, 18, 1.6);
   }
   else if (n === 'Nails' && !S.topcoat) {
@@ -1001,7 +1019,7 @@ actBtn.addEventListener('click', function () {
 });
 $('#keep').addEventListener('click', function () { S.reveal = false; app.classList.remove('revealed'); $('#revealbar').hidden = true; });
 $('#again').addEventListener('click', function () {
-  var sc = S.sparks; fresh(); S.sparks = sc; dyeColor = null; applyLook(); M = 'salon';
+  var sc = S.sparks; fresh(); resetDirt(); S.sparks = sc; applyLook(); M = 'salon';
   app.classList.remove('revealed'); $('#revealbar').hidden = true;
   $('#m-salon').setAttribute('aria-pressed', 'true'); $('#m-stable').setAttribute('aria-pressed', 'false');
   stage.setAttribute('data-scene', OPTS.scene[sel.scene][0]);
@@ -1021,12 +1039,24 @@ var OPTS = {
   scene: [['lamp', 'Lamp room'], ['rain', 'Rainy window'], ['dusk', 'Dusk'], ['moss', 'Moss']]
 };
 var sel = { skin: 1, hair: 0, cut: 0, top: 0, outfit: 0, extra: 0, scene: 0 }, cat = 'skin';
-var LOOK_KEY = 'lamplight.look.v1';
-try {
-  var saved = JSON.parse(localStorage.getItem(LOOK_KEY) || 'null');
-  if (saved) Object.keys(sel).forEach(function (k) { var n = saved[k]; if (typeof n === 'number' && n >= 0 && n < OPTS[k].length && n % 1 === 0) sel[k] = n; });
-} catch (e) {}
-function saveLook() { try { localStorage.setItem(LOOK_KEY, JSON.stringify(sel)); } catch (e) {} }
+var LOOK_KEY = 'lamplight.look.v1', saveState = 'unknown';
+function readLook() {
+  var raw = null;
+  try { raw = localStorage.getItem(LOOK_KEY); } catch (e) {}
+  if (!raw) { try { var m = document.cookie.match(/(?:^|; )lamplightLook=([^;]*)/); if (m) raw = decodeURIComponent(m[1]); } catch (e) {} }
+  try { return raw ? JSON.parse(raw) : null; } catch (e) { return null; }
+}
+var saved = readLook();
+if (saved) {
+  Object.keys(sel).forEach(function (k) { var n = saved[k]; if (typeof n === 'number' && n >= 0 && n < OPTS[k].length && n % 1 === 0) sel[k] = n; });
+  if (typeof saved.dye === 'string') DYES.forEach(function (d) { if (d[0] === saved.dye) dyeColor = d[0]; });
+}
+function saveLook() {
+  var json = JSON.stringify(Object.assign({}, sel, { dye: dyeColor })), ok = false;
+  try { localStorage.setItem(LOOK_KEY, json); ok = localStorage.getItem(LOOK_KEY) === json; } catch (e) {}
+  try { document.cookie = 'lamplightLook=' + encodeURIComponent(json) + '; max-age=31536000; path=/; SameSite=Lax'; if (!ok) ok = document.cookie.indexOf('lamplightLook=') >= 0; } catch (e) {}
+  saveState = ok ? 'ok' : 'fail'; if (S) S.key = '';
+}
 function applyLook() {
   charEl.style.setProperty('--skin', OPTS.skin[sel.skin][0]);
   charEl.style.setProperty('--hair', dyeColor || OPTS.hair[sel.hair][0]);
